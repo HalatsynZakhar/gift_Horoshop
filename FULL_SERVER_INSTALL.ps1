@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$Repository = "https://github.com/HalatsynZakhar/sets_Horoshop.git",
+    [string]$Repository = "https://github.com/HalatsynZakhar/gift_Horoshop.git",
     [string]$InstallDir = "C:\HoroshopGifts",
     [string]$Branch = "main",
     [ValidateRange(1, 1439)]
