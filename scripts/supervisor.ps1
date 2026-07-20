@@ -9,10 +9,10 @@ $ErrorActionPreference = "Stop"
 $AppDir = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $VenvDir = Join-Path $AppDir ".venv"
 $PythonExe = Join-Path $AppDir ".venv\Scripts\python.exe"
-$ServerScript = Join-Path $AppDir "sets_server.py"
+$ServerScript = Join-Path $AppDir "gifts_server.py"
 $LogsDir = Join-Path $AppDir "logs"
 $ConfigFile = Join-Path $AppDir "config.json"
-$PidFile = Join-Path $LogsDir "horoshop_sets.pid"
+$PidFile = Join-Path $LogsDir "horoshop_gifts.pid"
 $FallbackSupervisorLog = Join-Path $LogsDir "supervisor.log"
 $WorkerOutputLog = Join-Path $LogsDir "server-output.log"
 $WorkerErrorLog = Join-Path $LogsDir "server-error.log"
@@ -24,14 +24,14 @@ $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
 $env:Path = "$machinePath;$userPath"
 
 function Get-PublicLogFile {
-    $defaultLog = Join-Path $LogsDir "horoshop_sets.log"
+    $defaultLog = Join-Path $LogsDir "horoshop_gifts.log"
     if (!(Test-Path $ConfigFile)) { return $defaultLog }
     try {
         $config = Get-Content -LiteralPath $ConfigFile -Raw -Encoding UTF8 | ConvertFrom-Json
         $pathValue = [string]$config.logging.public_log_path
         $name = [string]$config.logging.public_log_name
         if ([string]::IsNullOrWhiteSpace($pathValue)) { return $defaultLog }
-        if ([string]::IsNullOrWhiteSpace($name)) { $name = "horoshop_sets.log" }
+        if ([string]::IsNullOrWhiteSpace($name)) { $name = "horoshop_gifts.log" }
         if ([System.IO.Path]::GetFileName($name) -ne $name) { return $defaultLog }
         $directory = if ([System.IO.Path]::IsPathRooted($pathValue)) {
             $pathValue
@@ -113,7 +113,7 @@ function Test-UpdatedProject {
             throw "Could not update Python dependencies after updating the project."
         }
     }
-    & $PythonExe -m py_compile $ServerScript (Join-Path $AppDir "horoshop_sets.py")
+    & $PythonExe -m py_compile $ServerScript (Join-Path $AppDir "horoshop_gifts.py")
     if ($LASTEXITCODE -ne 0) {
         throw "Python syntax check failed after updating the project."
     }
@@ -121,10 +121,10 @@ function Test-UpdatedProject {
 }
 
 function Backup-LocalData {
-    $backupDir = Join-Path ([System.IO.Path]::GetTempPath()) ("HoroshopSets-update-" + [Guid]::NewGuid().ToString("N"))
+    $backupDir = Join-Path ([System.IO.Path]::GetTempPath()) ("HoroshopGifts-update-" + [Guid]::NewGuid().ToString("N"))
     New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
 
-    foreach ($relativePath in @("config.json", "data\sets_state.json")) {
+    foreach ($relativePath in @("config.json", "data\gifts_state.json")) {
         $source = Join-Path $AppDir $relativePath
         if (Test-Path $source) {
             $target = Join-Path $backupDir $relativePath
@@ -138,7 +138,7 @@ function Backup-LocalData {
 function Restore-LocalData {
     param([string]$BackupDir)
 
-    foreach ($relativePath in @("config.json", "data\sets_state.json")) {
+    foreach ($relativePath in @("config.json", "data\gifts_state.json")) {
         $source = Join-Path $BackupDir $relativePath
         if (Test-Path $source) {
             $target = Join-Path $AppDir $relativePath
@@ -242,7 +242,7 @@ function Update-ProjectIfNeeded {
             if ($LASTEXITCODE -ne 0) { throw "Could not clean files during rollback." }
             if ($backupDir) { Restore-LocalData $backupDir }
             Ensure-PythonEnvironment
-            & $PythonExe -m py_compile $ServerScript (Join-Path $AppDir "horoshop_sets.py")
+            & $PythonExe -m py_compile $ServerScript (Join-Path $AppDir "horoshop_gifts.py")
             if ($LASTEXITCODE -ne 0) { throw "Python syntax check failed after rollback." }
             Write-Log "Previous revision was restored. The web server will be started again."
         }

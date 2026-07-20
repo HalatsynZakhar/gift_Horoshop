@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$Repository = "https://github.com/HalatsynZakhar/sets_Horoshop.git",
-    [string]$InstallDir = "C:\HoroshopSets",
+    [string]$InstallDir = "C:\HoroshopGifts",
     [string]$Branch = "main",
     [ValidateRange(1, 1439)]
     [int]$CheckIntervalMinutes = 5,
@@ -10,8 +10,8 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$TaskName = "HoroshopSets"
-$InstallLog = Join-Path $env:ProgramData "HoroshopSets-install.log"
+$TaskName = "HoroshopGifts"
+$InstallLog = Join-Path $env:ProgramData "HoroshopGifts-install.log"
 $TranscriptStarted = $false
 
 [Net.ServicePointManager]::SecurityProtocol = `
@@ -56,7 +56,7 @@ function Install-PythonDirect {
 }
 
 function Install-GitDirect {
-    $release = Invoke-RestMethod -Uri "https://api.github.com/repos/git-for-windows/git/releases/latest" -Headers @{ "User-Agent" = "HoroshopSets-Installer" }
+    $release = Invoke-RestMethod -Uri "https://api.github.com/repos/git-for-windows/git/releases/latest" -Headers @{ "User-Agent" = "HoroshopGifts-Installer" }
     $asset = $release.assets | Where-Object { $_.name -match "^Git-.+-64-bit\.exe$" } | Select-Object -First 1
     if ($null -eq $asset) { throw "Could not find a 64-bit Git for Windows installer." }
     $installer = Join-Path $env:TEMP $asset.name
@@ -91,7 +91,7 @@ function Invoke-TaskCommand {
 function Stop-ExistingRuntime {
     Start-Process -FilePath "schtasks.exe" -ArgumentList @("/End", "/TN", $TaskName) -WindowStyle Hidden -Wait | Out-Null
     $paths = @(
-        (Join-Path $InstallDir "sets_server.py"),
+        (Join-Path $InstallDir "gifts_server.py"),
         (Join-Path $InstallDir "scripts\supervisor.ps1"),
         (Join-Path $InstallDir "scripts\auto_update.bat")
     )
@@ -104,7 +104,7 @@ function Stop-ExistingRuntime {
         Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
         Write-Output "Stopped existing process: $($_.Name), PID $($_.ProcessId)."
     }
-    Remove-Item -LiteralPath (Join-Path $InstallDir "logs\horoshop_sets.pid") -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath (Join-Path $InstallDir "logs\horoshop_gifts.pid") -Force -ErrorAction SilentlyContinue
 }
 
 function Grant-ProjectAccess {
@@ -143,11 +143,11 @@ function Initialize-Configuration {
 function Get-PublicLogFile {
     param([object]$Config)
 
-    $defaultLog = Join-Path $InstallDir "logs\horoshop_sets.log"
+    $defaultLog = Join-Path $InstallDir "logs\horoshop_gifts.log"
     $pathValue = [string]$Config.logging.public_log_path
     $name = [string]$Config.logging.public_log_name
     if ([string]::IsNullOrWhiteSpace($pathValue)) { return $defaultLog }
-    if ([string]::IsNullOrWhiteSpace($name)) { $name = "horoshop_sets.log" }
+    if ([string]::IsNullOrWhiteSpace($name)) { $name = "horoshop_gifts.log" }
     if ([System.IO.Path]::GetFileName($name) -ne $name) { return $defaultLog }
     $directory = if ([System.IO.Path]::IsPathRooted($pathValue)) {
         $pathValue
@@ -161,7 +161,7 @@ function Get-PublicLogFile {
 function Start-AndVerifyService {
     param([string]$PublicLogFile)
 
-    $pidFile = Join-Path $InstallDir "logs\horoshop_sets.pid"
+    $pidFile = Join-Path $InstallDir "logs\horoshop_gifts.pid"
     $supervisorLog = $PublicLogFile
     Remove-Item -LiteralPath $pidFile -Force -ErrorAction SilentlyContinue
     Invoke-TaskCommand -Arguments @("/Run", "/TN", $TaskName)
@@ -172,7 +172,7 @@ function Start-AndVerifyService {
         $savedPid = 0
         if (![int]::TryParse((Get-Content $pidFile -Raw).Trim(), [ref]$savedPid)) { continue }
         $process = Get-CimInstance Win32_Process -Filter "ProcessId = $savedPid" -ErrorAction SilentlyContinue
-        if ($null -ne $process -and [string]$process.CommandLine -like "*sets_server.py*") {
+        if ($null -ne $process -and [string]$process.CommandLine -like "*gifts_server.py*") {
             Write-Output "Web server verified. PID: $savedPid."
             return
         }
@@ -225,13 +225,13 @@ try {
     }
 
     if (Test-Path (Join-Path $InstallDir ".git")) {
-        $configBackup = Join-Path $env:TEMP "HoroshopSets-config-$PID.json"
-        $stateBackup = Join-Path $env:TEMP "HoroshopSets-state-$PID.json"
+        $configBackup = Join-Path $env:TEMP "HoroshopGifts-config-$PID.json"
+        $stateBackup = Join-Path $env:TEMP "HoroshopGifts-state-$PID.json"
         if (Test-Path (Join-Path $InstallDir "config.json")) {
             Copy-Item (Join-Path $InstallDir "config.json") $configBackup -Force
         }
-        if (Test-Path (Join-Path $InstallDir "data\sets_state.json")) {
-            Copy-Item (Join-Path $InstallDir "data\sets_state.json") $stateBackup -Force
+        if (Test-Path (Join-Path $InstallDir "data\gifts_state.json")) {
+            Copy-Item (Join-Path $InstallDir "data\gifts_state.json") $stateBackup -Force
         }
         Stop-ExistingRuntime
         git -C $InstallDir fetch origin $Branch
@@ -247,7 +247,7 @@ try {
         }
         if (Test-Path $stateBackup) {
             New-Item -ItemType Directory -Path (Join-Path $InstallDir "data") -Force | Out-Null
-            Copy-Item $stateBackup (Join-Path $InstallDir "data\sets_state.json") -Force
+            Copy-Item $stateBackup (Join-Path $InstallDir "data\gifts_state.json") -Force
             Remove-Item $stateBackup -Force -ErrorAction SilentlyContinue
             Write-Output "Restored local sets registry after code update."
         }
@@ -281,11 +281,11 @@ try {
     & $venvPython -m pip install --upgrade pip
     & $venvPython -m pip install -r (Join-Path $InstallDir "requirements.txt")
     if ($LASTEXITCODE -ne 0) { throw "Could not install Python dependencies." }
-    & $venvPython -m py_compile (Join-Path $InstallDir "horoshop_sets.py") (Join-Path $InstallDir "sets_server.py")
+    & $venvPython -m py_compile (Join-Path $InstallDir "horoshop_gifts.py") (Join-Path $InstallDir "gifts_server.py")
     if ($LASTEXITCODE -ne 0) { throw "Python syntax check failed." }
 
     $port = if ($config.server.port) { [int]$config.server.port } else { 8093 }
-    $ruleName = "HoroshopSets-$port"
+    $ruleName = "HoroshopGifts-$port"
     Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue | Remove-NetFirewallRule
     New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -Action Allow -Protocol TCP -LocalPort $port | Out-Null
 

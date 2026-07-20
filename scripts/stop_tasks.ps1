@@ -5,12 +5,12 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$TaskName = "HoroshopSets"
+$TaskName = "HoroshopGifts"
 $AppDir = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-$ServerScript = Join-Path $AppDir "sets_server.py"
+$ServerScript = Join-Path $AppDir "gifts_server.py"
 $SupervisorScript = Join-Path $AppDir "scripts\supervisor.ps1"
 $AutoUpdateBat = Join-Path $AppDir "scripts\auto_update.bat"
-$PidFile = Join-Path $AppDir "logs\horoshop_sets.pid"
+$PidFile = Join-Path $AppDir "logs\horoshop_gifts.pid"
 $stopped = 0
 
 function Invoke-Schtasks {
@@ -48,7 +48,7 @@ try {
     Remove-Item -LiteralPath $PidFile -Force -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 1
     Stop-ProjectProcesses
-    Write-Host "Horoshop Sets stopped. Processes stopped: $stopped." -ForegroundColor Green
+    Write-Host "Horoshop Gifts stopped. Processes stopped: $stopped." -ForegroundColor Green
 }
 catch {
     Write-Host "Stop failed: $($_.Exception.Message)" -ForegroundColor Red

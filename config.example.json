@@ -1,16 +1,14 @@
 {
   "server": {
     "host": "0.0.0.0",
-    "port": 8093,
-    "state_file": "data/sets_state.json"
+    "port": 8094
   },
   "horoshop": {
     "domain": "https://your-shop.example.com",
-    "currency": "UAH",
     "batch_size": 50
   },
   "logging": {
     "public_log_path": "C:\\ShareFiles\\public",
-    "public_log_name": "horoshop_sets.log"
+    "public_log_name": "horoshop_gifts.log"
   }
 }
