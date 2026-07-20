@@ -284,7 +284,7 @@ try {
     & $venvPython -m py_compile (Join-Path $InstallDir "horoshop_gifts.py") (Join-Path $InstallDir "gifts_server.py")
     if ($LASTEXITCODE -ne 0) { throw "Python syntax check failed." }
 
-    $port = if ($config.server.port) { [int]$config.server.port } else { 8093 }
+    $port = if ($config.server.port) { [int]$config.server.port } else { 8094 }
     $ruleName = "HoroshopGifts-$port"
     Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue | Remove-NetFirewallRule
     New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -Action Allow -Protocol TCP -LocalPort $port | Out-Null
