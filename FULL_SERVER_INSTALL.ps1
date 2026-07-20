@@ -158,6 +158,18 @@ function Get-PublicLogFile {
     return Join-Path $directory $name
 }
 
+function Initialize-PublicLog {
+    param([string]$LogFile)
+
+    $directory = Split-Path -Path $LogFile -Parent
+    New-Item -ItemType Directory -Path $directory -Force | Out-Null
+    & icacls.exe $directory /grant "*S-1-5-18:(OI)(CI)M" /T /C | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Could not grant SYSTEM write access to the public log directory: $directory"
+    }
+    New-Item -ItemType File -Path $LogFile -Force | Out-Null
+}
+
 function Start-AndVerifyService {
     param([string]$PublicLogFile)
 
@@ -264,6 +276,7 @@ try {
 
     $config = Initialize-Configuration
     $publicLogFile = Get-PublicLogFile -Config $config
+    Initialize-PublicLog -LogFile $publicLogFile
 
     Set-Location $InstallDir
     $venvDir = Join-Path $InstallDir ".venv"
