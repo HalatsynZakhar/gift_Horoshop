@@ -18,6 +18,7 @@ $WorkerOutputLog = Join-Path $LogsDir "server-output.log"
 $WorkerErrorLog = Join-Path $LogsDir "server-error.log"
 $Worker = $null
 $NextUpdateCheck = [DateTime]::MinValue
+$GitExe = $null
 
 $machinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
 $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
@@ -68,6 +69,27 @@ function Write-Log {
         Get-Content -LiteralPath $activeLog -Tail 1000 |
             Set-Content -LiteralPath $activeLog -Encoding UTF8
     }
+}
+
+function Find-GitExecutable {
+    $command = Get-Command git.exe -ErrorAction SilentlyContinue
+    if ($command -and (Test-Path $command.Source)) {
+        return $command.Source
+    }
+
+    $candidates = @(
+        (Join-Path $env:ProgramFiles "Git\cmd\git.exe"),
+        (Join-Path $env:ProgramFiles "Git\bin\git.exe"),
+        "C:\Program Files\Git\cmd\git.exe",
+        "C:\Program Files\Git\bin\git.exe",
+        "C:\Program Files (x86)\Git\cmd\git.exe"
+    ) | Select-Object -Unique
+    foreach ($candidate in $candidates) {
+        if ($candidate -and (Test-Path $candidate)) {
+            return $candidate
+        }
+    }
+    return $null
 }
 
 function Test-WorkerRunning {
@@ -208,24 +230,24 @@ function Update-ProjectIfNeeded {
     if ((Get-Date) -lt $script:NextUpdateCheck) { return $false }
     $script:NextUpdateCheck = (Get-Date).AddMinutes($CheckIntervalMinutes)
 
-    git -C $AppDir fetch origin $Branch --quiet
+    & $GitExe -C $AppDir fetch origin $Branch --quiet
     if ($LASTEXITCODE -ne 0) { throw "Could not fetch origin/$Branch." }
 
-    $local = (git -C $AppDir rev-parse HEAD).Trim()
-    $remote = (git -C $AppDir rev-parse "origin/$Branch").Trim()
+    $local = (& $GitExe -C $AppDir rev-parse HEAD).Trim()
+    $remote = (& $GitExe -C $AppDir rev-parse "origin/$Branch").Trim()
     if ($local -eq $remote) { return $false }
 
     Write-Log "Update found. Stopping service and rebuilding deployment from origin/$Branch."
     $backupDir = $null
     $requirementsChanged = $false
     try {
-        git -C $AppDir diff --quiet $local "origin/$Branch" -- requirements.txt
+        & $GitExe -C $AppDir diff --quiet $local "origin/$Branch" -- requirements.txt
         $requirementsChanged = $LASTEXITCODE -ne 0
         Stop-Worker
         $backupDir = Backup-LocalData
-        git -C $AppDir reset --hard "origin/$Branch"
+        & $GitExe -C $AppDir reset --hard "origin/$Branch"
         if ($LASTEXITCODE -ne 0) { throw "Git hard reset failed." }
-        git -C $AppDir clean -fd
+        & $GitExe -C $AppDir clean -fd
         if ($LASTEXITCODE -ne 0) { throw "Could not clean untracked deployment files." }
         Restore-LocalData $backupDir
         Test-UpdatedProject $requirementsChanged
@@ -236,9 +258,9 @@ function Update-ProjectIfNeeded {
         $failure = $_.Exception.Message
         Write-Log "Update failed: $failure. Restoring revision $local."
         try {
-            git -C $AppDir reset --hard $local
+            & $GitExe -C $AppDir reset --hard $local
             if ($LASTEXITCODE -ne 0) { throw "Git rollback failed." }
-            git -C $AppDir clean -fd
+            & $GitExe -C $AppDir clean -fd
             if ($LASTEXITCODE -ne 0) { throw "Could not clean files during rollback." }
             if ($backupDir) { Restore-LocalData $backupDir }
             Ensure-PythonEnvironment
@@ -258,7 +280,11 @@ function Update-ProjectIfNeeded {
     }
 }
 
-if (!(Get-Command git -ErrorAction SilentlyContinue)) { throw "Git was not found in PATH." }
+$GitExe = Find-GitExecutable
+if (!$GitExe) {
+    Write-Log "Supervisor startup error: Git was not found for the SYSTEM account. Install Git for all users or add it to the system PATH."
+    throw "Git was not found for the SYSTEM account."
+}
 if (!(Test-Path (Join-Path $AppDir ".git"))) { throw "$AppDir is not a Git repository." }
 
 try {
