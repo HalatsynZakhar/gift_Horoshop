@@ -1,50 +1,480 @@
 <!doctype html>
 <html lang="uk">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Подарунки Хорошоп</title>
   <style>
-    :root { font-family: Arial, sans-serif; color: #183126; background: #f3f6f4; } * { box-sizing: border-box; } body { margin: 0; }
-    header { background: #135c3c; color: #fff; padding: 22px max(20px, calc((100% - 1180px) / 2)); } h1 { margin: 0; font-size: 26px; } header p { margin: 6px 0 0; color: #dcefe4; }
-    main { max-width: 1180px; margin: auto; padding: 20px; } section { background: #fff; border: 1px solid #d5e1d9; border-radius: 6px; padding: 18px; margin-bottom: 16px; } h2 { margin: 0 0 14px; font-size: 18px; }
-    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; } label { display: grid; gap: 6px; font-size: 13px; font-weight: 700; } input { min-height: 38px; width: 100%; border: 1px solid #adc1b3; border-radius: 4px; padding: 8px; font: inherit; } input.input-error { border-color: #b42332; background: #fff1f2; outline: 2px solid #f8c6cc; }
-    .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 14px; } button, .link-button { border: 1px solid #135c3c; border-radius: 4px; padding: 9px 13px; font: inherit; font-weight: 700; background: #135c3c; color: #fff; cursor: pointer; text-decoration: none; } button.secondary, .link-button.secondary { background: #f1f6f2; color: #15482e; border-color: #b8cabb; } button.danger { background: #a52834; border-color: #a52834; }
-    .hint { color: #4f6456; line-height: 1.45; } .note { margin: 12px 0 0; padding: 10px 12px; border-left: 4px solid #d09120; background: #fff8e7; color: #5b481a; line-height: 1.45; } .table-wrap { overflow-x: auto; }
-    table { min-width: 780px; width: 100%; border-collapse: collapse; font-size: 13px; } th, td { padding: 9px; text-align: left; vertical-align: top; border-bottom: 1px solid #e0e9e3; } th { color: #4b6355; font-size: 11px; text-transform: uppercase; }
-    .tag { display: inline-block; border-radius: 3px; padding: 3px 6px; font-size: 11px; font-weight: 700; background: #e8eef0; color: #354b55; } .tag.synced, .tag.ready { background: #dff3e7; color: #0c5532; } .tag.error, .tag.invalid { background: #fae4e6; color: #8d1826; } .empty { color: #6b7b70; }
-    #activity-log { display: grid; gap: 7px; max-height: 260px; overflow: auto; } .log-entry { padding: 9px 10px; border-left: 4px solid #7b8c81; background: #f5f8f6; line-height: 1.4; } .log-entry.ok { border-color: #177245; background: #eaf7ee; } .log-entry.error { border-color: #b42332; background: #fff0f1; }
-    @media (max-width: 720px) { main { padding: 14px; } section { padding: 14px; } .grid { grid-template-columns: 1fr; } }
+    :root {
+      color: #172033;
+      background: #f5f7fb;
+      font-family: Arial, sans-serif;
+      font-size: 16px;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled { cursor: wait; opacity: .62; }
+
+    .topbar { background: #172033; color: #fff; border-bottom: 5px solid #e88944; }
+    .topbar-inner, main { max-width: 1200px; margin: 0 auto; }
+    .topbar-inner { padding: 24px 24px 20px; display: flex; justify-content: space-between; align-items: end; gap: 24px; }
+    h1 { margin: 0; font-size: 28px; letter-spacing: 0; }
+    .subtitle { margin: 6px 0 0; color: #c9d4e7; line-height: 1.4; }
+    .connection { min-width: 185px; display: flex; align-items: center; justify-content: end; gap: 8px; color: #dfe7f6; font-size: 13px; }
+    .connection-dot { width: 10px; height: 10px; border-radius: 50%; background: #90a1b9; flex: 0 0 auto; }
+    .connection-dot.ok { background: #45c486; }
+    .connection-dot.error { background: #ed6b6b; }
+    .connection-dot.busy { background: #f4c559; animation: pulse 1s infinite; }
+
+    main { padding: 0 24px 32px; }
+    .section { padding: 25px 0; border-bottom: 1px solid #d9e0ec; }
+    .section:last-child { border-bottom: 0; }
+    .section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 16px; }
+    h2 { margin: 0; font-size: 20px; }
+    .section-note, .hint { color: #627088; line-height: 1.45; }
+    .section-note { margin: 0; max-width: 700px; }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 780px; }
+    label { display: grid; gap: 7px; color: #344258; font-size: 13px; font-weight: 700; }
+    label .hint { color: #758299; font-size: 12px; font-weight: 400; }
+    input { min-height: 42px; width: 100%; padding: 9px 11px; color: #172033; background: #fff; border: 1px solid #b7c3d5; border-radius: 4px; outline: none; }
+    input:focus { border-color: #2d67b2; box-shadow: 0 0 0 3px #dceaff; }
+    input.input-error { border-color: #c53848; background: #fff3f4; box-shadow: 0 0 0 3px #ffe0e4; }
+    input[type="file"] { padding: 7px; }
+
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 16px; }
+    button, .link-button { min-height: 40px; border: 1px solid #2d67b2; border-radius: 4px; padding: 8px 13px; background: #2d67b2; color: #fff; font-weight: 700; text-decoration: none; transition: background .15s ease, border-color .15s ease, transform .15s ease; }
+    button:hover:not(:disabled), .link-button:hover { background: #21569a; border-color: #21569a; }
+    button:active:not(:disabled) { transform: translateY(1px); }
+    button.secondary, .link-button.secondary { background: #fff; color: #24538f; border-color: #9db6d8; }
+    button.secondary:hover:not(:disabled), .link-button.secondary:hover { background: #edf4ff; border-color: #2d67b2; }
+    button.danger { background: #b63548; border-color: #b63548; }
+    button.danger:hover:not(:disabled) { background: #92283a; border-color: #92283a; }
+    .button-busy::before { content: ""; display: inline-block; width: 12px; height: 12px; margin-right: 8px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; vertical-align: -1px; animation: spin .65s linear infinite; }
+
+    .operation-status { display: flex; gap: 10px; align-items: flex-start; margin: 18px 0 0; padding: 12px 14px; border-left: 4px solid #8c9bb3; background: #edf1f7; color: #334158; line-height: 1.4; }
+    .operation-status.ok { border-color: #2e9b69; background: #e7f7ee; color: #175e3e; }
+    .operation-status.error { border-color: #c53848; background: #fff0f2; color: #892634; }
+    .operation-status.busy { border-color: #e88944; background: #fff4eb; color: #7d421d; }
+    .operation-status[hidden] { display: none; }
+
+    .workspace { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(280px, .75fr); gap: 28px; align-items: start; }
+    .workflow { display: grid; gap: 12px; }
+    .workflow-item { display: grid; grid-template-columns: 30px 1fr; gap: 10px; color: #536178; line-height: 1.4; }
+    .workflow-number { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid #afbdd1; border-radius: 50%; color: #285891; font-size: 13px; font-weight: 700; }
+    .workflow strong { color: #26364d; }
+    .workflow p { margin: 2px 0 0; }
+
+    .table-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; align-items: center; margin: 0 0 12px; }
+    .selection-count { color: #596880; font-size: 13px; }
+    .selection-count strong { color: #26364d; }
+    .table-wrap { overflow-x: auto; border: 1px solid #d5deeb; }
+    table { min-width: 720px; width: 100%; border-collapse: collapse; font-size: 14px; background: #fff; }
+    th, td { padding: 11px 12px; text-align: left; vertical-align: middle; border-bottom: 1px solid #e2e7ef; }
+    th { background: #edf2f9; color: #526177; font-size: 11px; letter-spacing: 0; text-transform: uppercase; }
+    tbody tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: #f7faff; }
+    td.check-cell, th.check-cell { width: 42px; text-align: center; }
+    td.action-cell { width: 110px; text-align: right; }
+    td.action-cell button { min-height: 34px; padding: 5px 9px; font-size: 12px; }
+    .tag { display: inline-block; padding: 4px 7px; border-radius: 3px; background: #e6ebf2; color: #3e4d63; font-size: 12px; font-weight: 700; }
+    .tag.ready { background: #fff1d7; color: #80521a; }
+    .tag.synced { background: #e2f5e9; color: #17613f; }
+    .tag.error, .tag.invalid { background: #fde5e8; color: #982b3a; }
+    .empty { margin: 0; padding: 18px 0; color: #69778c; }
+
+    #activity-log { display: grid; gap: 8px; max-height: 280px; overflow: auto; }
+    .log-entry { padding: 10px 12px; border-left: 4px solid #8d9bb0; background: #edf1f6; color: #3d4b60; line-height: 1.4; }
+    .log-entry.ok { border-color: #2e9b69; background: #e8f7ef; color: #1a633f; }
+    .log-entry.error { border-color: #c53848; background: #fff0f2; color: #8e2937; }
+    .log-entry.busy { border-color: #e88944; background: #fff4eb; color: #7e431e; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse { 50% { opacity: .45; } }
+    @media (max-width: 820px) {
+      .topbar-inner { display: block; }
+      .connection { justify-content: start; margin-top: 14px; }
+      .grid, .grid.two, .workspace { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 540px) {
+      main { padding: 0 16px 28px; }
+      .topbar-inner { padding: 20px 16px 17px; }
+      h1 { font-size: 24px; }
+      .section { padding: 20px 0; }
+      .section-head { display: block; }
+      .section-note { margin-top: 7px; }
+      .actions > button, .actions > .link-button { width: 100%; text-align: center; }
+    }
   </style>
 </head>
 <body>
-  <header><h1>Подарунки Хорошоп</h1><p>Призначення та керування подарунками товарів.</p></header>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div>
+        <h1>Подарунки Хорошоп</h1>
+        <p class="subtitle">Масове та ручне керування подарунками товарів.</p>
+      </div>
+      <div class="connection" id="connection-status" aria-live="polite"><span class="connection-dot" id="connection-dot"></span><span id="connection-text">Готово до роботи</span></div>
+    </div>
+  </header>
+
   <main>
-    <section><h2>Доступ до API</h2><div class="grid"><label>Логін API<input id="login" autocomplete="username"></label><label>Пароль API<input id="password" type="password" autocomplete="current-password"></label><label>Токен API<input id="token"><span class="hint">Можна вказати замість логіна та пароля.</span></label></div></section>
-    <section><h2>Призначити подарунок вручну</h2><div class="grid"><label>Артикул основного товару<input id="primary-display"><span class="hint">Артикул, що відображається на сайті.</span></label><label>Артикул подарунка<input id="gift-display"><span class="hint">Артикул, що відображається на сайті.</span></label></div><div class="actions"><button id="create-gift" type="button">Додати подарунок</button></div></section>
-    <section><h2>Масове призначення через Excel</h2><div class="grid"><label>Excel-файл подарунків<input id="file" type="file" accept=".xlsx,.xlsm"></label><div class="actions"><a class="link-button secondary" href="/api/template?v=1">Завантажити шаблон</a><button class="secondary" id="export" type="button">Вивантажити поточні подарунки</button></div></div><p class="hint">У шаблоні лише дві колонки: основний товар і подарунок. В обох вказуйте артикул для відображення на сайті. Поточні подарунки не стираються: до списку основного товару додається лише новий подарунок.</p><div class="actions"><button class="secondary" id="preview" type="button">Перевірити Excel</button><button id="import" type="button">Виконати операції</button></div></section>
-    <section><h2>Результат останньої операції</h2><div class="table-wrap" id="result"><p class="empty">Ще немає результатів.</p></div></section>
-    <section><h2>Поточні подарунки в Хорошоп</h2><p class="note">Список отримується безпосередньо з експорту каталогу Хорошоп. При видаленні змінюється лише обраний зв'язок, інші подарунки товару зберігаються.</p><div class="actions"><button class="secondary" id="refresh" type="button">Оновити список</button><button class="danger" id="delete-selected" type="button">Видалити вибрані</button><button class="secondary" id="export-second" type="button">Вивантажити Excel</button></div><div class="table-wrap" id="state"><p class="empty">Вкажіть доступ до API та натисніть «Оновити список».</p></div></section>
-    <section><h2>Журнал операцій</h2><div id="activity-log"><p class="empty">Операції ще не виконувалися.</p></div></section>
+    <section class="section">
+      <div class="section-head">
+        <h2>Доступ до API</h2>
+        <p class="section-note">Для кожної операції потрібні логін і пароль API або чинний токен. Дані не зберігаються у браузері.</p>
+      </div>
+      <div class="grid">
+        <label>Логін API<input id="login" autocomplete="username"></label>
+        <label>Пароль API<input id="password" type="password" autocomplete="current-password"></label>
+        <label>Токен API<input id="token"><span class="hint">Вкажіть токен замість логіна та пароля, якщо він уже отриманий.</span></label>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>Додати подарунок вручну</h2>
+        <p class="section-note">Вказуйте артикул, який відображається на сайті. Перед зміною сервіс звіряє обидва товари з каталогом Хорошоп.</p>
+      </div>
+      <div class="grid two">
+        <label>Артикул основного товару<input id="primary-display" placeholder="Наприклад, 01063"></label>
+        <label>Артикул подарунка<input id="gift-display" placeholder="Наприклад, GIFT-01"></label>
+      </div>
+      <div class="actions"><button id="create-gift" type="button">Додати подарунок</button></div>
+    </section>
+
+    <section class="section">
+      <div class="workspace">
+        <div>
+          <div class="section-head"><h2>Масові операції через Excel</h2></div>
+          <label>Excel-файл подарунків<input id="file" type="file" accept=".xlsx,.xlsm"><span class="hint">Два стовпці: артикул основного товару та артикул подарунка.</span></label>
+          <div class="actions">
+            <a class="link-button secondary" href="/api/template?v=2">Завантажити шаблон</a>
+            <button class="secondary" id="preview" type="button">Перевірити Excel</button>
+            <button id="import" type="button">Виконати операції</button>
+          </div>
+          <p class="section-note">Для масового видалення спочатку вивантажте поточні подарунки нижче, позначте потрібні рядки «Так» у стовпці «Видалити (Так)» і завантажте цей файл сюди.</p>
+        </div>
+        <div class="workflow" aria-label="Порядок масової операції">
+          <div class="workflow-item"><span class="workflow-number">1</span><div><strong>Заповніть шаблон</strong><p>Кожен рядок додає один зв'язок основного товару та подарунка.</p></div></div>
+          <div class="workflow-item"><span class="workflow-number">2</span><div><strong>Перевірте файл</strong><p>Статус «Готово до операції» означає, що рядок можна передати в Хорошоп.</p></div></div>
+          <div class="workflow-item"><span class="workflow-number">3</span><div><strong>Виконайте операції</strong><p>Поточні подарунки товару не стираються, змінюються тільки зазначені зв'язки.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="operation-status" id="operation-status" hidden aria-live="polite"></div>
+
+    <section class="section">
+      <div class="section-head"><h2>Результат останньої операції</h2><p class="section-note">Після перевірки виправте лише рядки зі статусом «Помилка», а рядки «Готово до операції» можна запускати.</p></div>
+      <div class="table-wrap" id="result"><p class="empty">Ще немає результатів.</p></div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>Поточні подарунки в Хорошоп</h2>
+        <p class="section-note">Список завантажується безпосередньо з Хорошоп. Видалення змінює лише вибрані зв'язки.</p>
+      </div>
+      <div class="table-toolbar">
+        <div class="actions" style="margin-top:0">
+          <button class="secondary" id="refresh" type="button">Оновити список</button>
+          <button class="secondary" id="export" type="button">Вивантажити Excel</button>
+          <button class="danger" id="delete-selected" type="button" disabled>Видалити вибрані</button>
+        </div>
+        <span class="selection-count" id="selection-count">Вибрано: <strong>0</strong></span>
+      </div>
+      <div class="table-wrap" id="state"><p class="empty">Вкажіть доступ до API та натисніть «Оновити список».</p></div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>Журнал операцій</h2><p class="section-note">Нові повідомлення з'являються зверху.</p></div>
+      <div id="activity-log"><p class="empty">Операції ще не виконувалися.</p></div>
+    </section>
   </main>
+
   <script>
     let associations = [];
-    const state = document.getElementById('state'), result = document.getElementById('result'), log = document.getElementById('activity-log');
-    const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-    const credentials = () => ({login: document.getElementById('login').value.trim(), password: document.getElementById('password').value, token: document.getElementById('token').value.trim()});
-    function clearCredentialErrors(){['login','password'].forEach(id=>document.getElementById(id).classList.remove('input-error'))}
-    function validateCredentials(){const data=credentials();clearCredentialErrors();if(data.token||(data.login&&data.password))return true;if(!data.login)document.getElementById('login').classList.add('input-error');if(!data.password)document.getElementById('password').classList.add('input-error');setMessage('Вкажіть логін і пароль API або чинний токен.','error');return false}
-    function setMessage(message,kind=''){if(log.querySelector('.empty'))log.innerHTML='';const entry=document.createElement('div');entry.className=`log-entry ${kind}`;entry.textContent=`${new Date().toLocaleTimeString()} — ${message}`;log.prepend(entry)}
-    async function readResponse(response){const text=await response.text();try{return JSON.parse(text)}catch{return text}}
-    async function jsonApi(url,body){const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const data=await readResponse(response);if(!response.ok)throw new Error(data.detail||data||'Помилка сервера.');return data}
-    function statusText(status){return ({ready:'готово',synced:'виконано',invalid:'помилка',error:'помилка'})[status]||status}
-    function actionText(action){return action==='delete'?'видалення':'додавання'}
-    function renderResult(items){if(!items.length){result.innerHTML='<p class="empty">У файлі немає операцій.</p>';return}result.innerHTML=`<table><thead><tr><th>Рядок</th><th>Операція</th><th>Основний товар</th><th>Подарунок</th><th>Стан</th></tr></thead><tbody>${items.map(item=>`<tr><td>${item.row_number}</td><td>${esc(actionText(item.action))}</td><td>${esc(item.primary_display)}</td><td>${esc(item.gift_display)}</td><td><span class="tag ${esc(item.status)}">${esc(statusText(item.status))}</span>${item.message?'<br>'+esc(item.message):''}</td></tr>`).join('')}</tbody></table>`}
-    function renderState(data){associations=data.items||[];if(!associations.length){state.innerHTML='<p class="empty">У Хорошоп поки немає призначених подарунків.</p>';return}state.innerHTML=`<table><thead><tr><th></th><th>Основний товар</th><th>Подарунок</th><th></th></tr></thead><tbody>${associations.map((item,index)=>`<tr><td><input type="checkbox" data-select="${index}"></td><td>${esc(item.primary_display)}</td><td>${esc(item.gift_display)}</td><td><button class="danger" data-delete-one="${index}" type="button">Видалити</button></td></tr>`).join('')}</tbody></table>`;document.querySelectorAll('[data-delete-one]').forEach(button=>button.addEventListener('click',()=>deletePairs([associations[Number(button.dataset.deleteOne)]])))}
-    async function loadAssociations(){if(!validateCredentials())return;try{setMessage('Отримання поточних подарунків...');const data=await jsonApi('/api/gifts/list',credentials());renderState(data);setMessage(`Завантажено зв'язків: ${data.count}.`,'ok')}catch(error){setMessage(error.message,'error')}}
-    async function createGift(){if(!validateCredentials())return;try{setMessage('Додавання подарунка...');const data=await jsonApi('/api/gifts/create',{...credentials(),primary_display:document.getElementById('primary-display').value,gift_display:document.getElementById('gift-display').value});renderResult(data.items||[]);if(data.errors)throw new Error(data.items.map(item=>item.message).filter(Boolean).join('; ')||'Не вдалося додати подарунок.');setMessage('Подарунок призначено.','ok');document.getElementById('primary-display').value='';document.getElementById('gift-display').value='';await loadAssociations()}catch(error){setMessage(error.message,'error')}}
-    async function deletePairs(pairs){if(!validateCredentials())return;if(!confirm(`Видалити зв'язків: ${pairs.length}?`))return;try{setMessage('Видалення подарунків...');const data=await jsonApi('/api/gifts/delete',{...credentials(),pairs});renderResult(data.items||[]);if(data.errors)throw new Error(data.items.map(item=>item.message).filter(Boolean).join('; ')||'Не вдалося видалити подарунок.');setMessage('Подарунки видалено.','ok');await loadAssociations()}catch(error){setMessage(error.message,'error')}}
-    async function fileAction(endpoint,importing){const file=document.getElementById('file').files[0];if(!file){setMessage('Виберіть Excel-файл.','error');return}if(!validateCredentials())return;const body=new FormData();body.append('file',file);for(const [key,value] of Object.entries(credentials()))body.append(key,value);try{setMessage(importing?'Виконання операцій...':'Перевірка файлу...');const response=await fetch(endpoint,{method:'POST',body});const data=await readResponse(response);if(!response.ok)throw new Error(data.detail||data||'Помилка сервера.');renderResult(data.items||[]);setMessage(importing?`Готово: успішно ${data.imported}, помилок ${data.errors}.`:`Готово до імпорту: ${data.ready}, помилок ${data.errors}.`,data.errors?'error':'ok');if(importing)await loadAssociations()}catch(error){setMessage(error.message,'error')}}
-    async function exportRegistry(){if(!validateCredentials())return;try{setMessage('Створення Excel-вивантаження...');const response=await fetch('/api/gifts/export',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(credentials())});if(!response.ok){const data=await readResponse(response);throw new Error(data.detail||data||'Помилка сервера.')}const blob=await response.blob(),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='horoshop_gifts_registry.xlsx';link.click();URL.revokeObjectURL(url);setMessage('Excel-файл сформовано.','ok')}catch(error){setMessage(error.message,'error')}}
-    document.getElementById('create-gift').addEventListener('click',createGift);document.getElementById('refresh').addEventListener('click',loadAssociations);document.getElementById('preview').addEventListener('click',()=>fileAction('/api/preview',false));document.getElementById('import').addEventListener('click',()=>fileAction('/api/import',true));document.getElementById('export').addEventListener('click',exportRegistry);document.getElementById('export-second').addEventListener('click',exportRegistry);document.getElementById('delete-selected').addEventListener('click',()=>{const selected=[...document.querySelectorAll('[data-select]:checked')].map(node=>associations[Number(node.dataset.select)]);if(!selected.length){setMessage("Виберіть зв'язки для видалення.",'error');return}deletePairs(selected)});['login','password','token'].forEach(id=>document.getElementById(id).addEventListener('input',clearCredentialErrors));
+    let activeOperations = 0;
+    const state = document.getElementById('state');
+    const result = document.getElementById('result');
+    const log = document.getElementById('activity-log');
+    const statusBox = document.getElementById('operation-status');
+    const connectionDot = document.getElementById('connection-dot');
+    const connectionText = document.getElementById('connection-text');
+    const deleteSelectedButton = document.getElementById('delete-selected');
+    const selectionCount = document.getElementById('selection-count');
+    const esc = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+
+    const credentials = () => ({
+      login: document.getElementById('login').value.trim(),
+      password: document.getElementById('password').value,
+      token: document.getElementById('token').value.trim(),
+    });
+
+    function clearCredentialErrors() {
+      ['login', 'password'].forEach(id => document.getElementById(id).classList.remove('input-error'));
+    }
+
+    function setConnection(text, kind = '') {
+      connectionText.textContent = text;
+      connectionDot.className = `connection-dot ${kind}`;
+    }
+
+    function setStatus(message, kind = '') {
+      statusBox.hidden = false;
+      statusBox.className = `operation-status ${kind}`;
+      statusBox.textContent = message;
+      if (kind === 'busy') setConnection('Операція виконується', 'busy');
+      if (kind === 'ok') setConnection("З'єднання працює", 'ok');
+      if (kind === 'error') setConnection('Потрібна увага', 'error');
+    }
+
+    function setMessage(message, kind = '') {
+      if (log.querySelector('.empty')) log.innerHTML = '';
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${kind}`;
+      entry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
+      log.prepend(entry);
+    }
+
+    function validateCredentials() {
+      const data = credentials();
+      clearCredentialErrors();
+      if (data.token || (data.login && data.password)) return true;
+      if (!data.login) document.getElementById('login').classList.add('input-error');
+      if (!data.password) document.getElementById('password').classList.add('input-error');
+      setStatus('Вкажіть логін і пароль API або чинний токен.', 'error');
+      setMessage('Для операції не вистачає даних доступу до API.', 'error');
+      return false;
+    }
+
+    function buttonBusy(button, busy, busyText = 'Зачекайте...') {
+      if (!button) return;
+      if (busy) {
+        button.dataset.originalText = button.textContent;
+        button.textContent = busyText;
+        button.classList.add('button-busy');
+        button.disabled = true;
+      } else {
+        button.textContent = button.dataset.originalText || button.textContent;
+        button.classList.remove('button-busy');
+        button.disabled = false;
+      }
+    }
+
+    async function withBusy(button, busyText, task) {
+      activeOperations += 1;
+      buttonBusy(button, true, busyText);
+      try {
+        return await task();
+      } finally {
+        activeOperations -= 1;
+        buttonBusy(button, false);
+        if (!activeOperations && !statusBox.classList.contains('error')) setConnection('Готово до роботи', 'ok');
+        updateSelectionControls();
+      }
+    }
+
+    async function readResponse(response) {
+      const text = await response.text();
+      try { return JSON.parse(text); } catch { return text; }
+    }
+
+    async function jsonApi(url, body) {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await readResponse(response);
+      if (!response.ok) throw new Error(data.detail || data || 'Помилка сервера.');
+      return data;
+    }
+
+    function statusText(status) {
+      return ({ ready: 'Готово до операції', synced: 'Виконано', invalid: 'Помилка', error: 'Помилка' })[status] || status;
+    }
+
+    function actionText(action) {
+      return action === 'delete' ? 'Видалення' : 'Додавання';
+    }
+
+    function renderResult(items) {
+      if (!items.length) {
+        result.innerHTML = '<p class="empty">У файлі немає операцій.</p>';
+        return;
+      }
+      result.innerHTML = `<table><thead><tr><th>Рядок</th><th>Операція</th><th>Основний товар</th><th>Подарунок</th><th>Стан</th></tr></thead><tbody>${items.map(item => `<tr><td>${item.row_number}</td><td>${esc(actionText(item.action))}</td><td>${esc(item.primary_display)}</td><td>${esc(item.gift_display)}</td><td><span class="tag ${esc(item.status)}">${esc(statusText(item.status))}</span>${item.message ? '<br>' + esc(item.message) : ''}</td></tr>`).join('')}</tbody></table>`;
+    }
+
+    function selectedAssociations() {
+      return [...document.querySelectorAll('[data-select]:checked')].map(node => associations[Number(node.dataset.select)]).filter(Boolean);
+    }
+
+    function updateSelectionControls() {
+      const selected = selectedAssociations().length;
+      selectionCount.innerHTML = `Вибрано: <strong>${selected}</strong>`;
+      deleteSelectedButton.disabled = selected === 0 || activeOperations > 0;
+      const selectAll = document.getElementById('select-all');
+      if (selectAll) {
+        selectAll.checked = associations.length > 0 && selected === associations.length;
+        selectAll.indeterminate = selected > 0 && selected < associations.length;
+      }
+    }
+
+    function renderState(data) {
+      associations = data.items || [];
+      if (!associations.length) {
+        state.innerHTML = '<p class="empty">У Хорошоп поки немає призначених подарунків.</p>';
+        updateSelectionControls();
+        return;
+      }
+      state.innerHTML = `<table><thead><tr><th class="check-cell"><input id="select-all" type="checkbox" aria-label="Вибрати всі зв'язки"></th><th>Основний товар</th><th>Подарунок</th><th class="action-cell">Дія</th></tr></thead><tbody>${associations.map((item, index) => `<tr><td class="check-cell"><input type="checkbox" data-select="${index}" aria-label="Вибрати зв'язок ${index + 1}"></td><td>${esc(item.primary_display)}</td><td>${esc(item.gift_display)}</td><td class="action-cell"><button class="danger" data-delete-one="${index}" type="button">Видалити</button></td></tr>`).join('')}</tbody></table>`;
+      document.getElementById('select-all').addEventListener('change', event => {
+        document.querySelectorAll('[data-select]').forEach(box => { box.checked = event.target.checked; });
+        updateSelectionControls();
+      });
+      document.querySelectorAll('[data-select]').forEach(box => box.addEventListener('change', updateSelectionControls));
+      document.querySelectorAll('[data-delete-one]').forEach(button => button.addEventListener('click', () => deletePairs([associations[Number(button.dataset.deleteOne)]], button)));
+      updateSelectionControls();
+    }
+
+    async function loadAssociations(button = document.getElementById('refresh'), quiet = false) {
+      if (!validateCredentials()) return;
+      await withBusy(button, 'Оновлення...', async () => {
+        try {
+          if (!quiet) setMessage('Отримання поточних подарунків...', 'busy');
+          setStatus('Завантажуємо поточні подарунки з Хорошоп.', 'busy');
+          const data = await jsonApi('/api/gifts/list', credentials());
+          renderState(data);
+          setStatus(`Список оновлено. Зв'язків: ${data.count}.`, 'ok');
+          if (!quiet) setMessage(`Завантажено зв'язків: ${data.count}.`, 'ok');
+        } catch (error) {
+          setStatus(error.message, 'error');
+          setMessage(error.message, 'error');
+        }
+      });
+    }
+
+    async function createGift() {
+      if (!validateCredentials()) return;
+      await withBusy(document.getElementById('create-gift'), 'Додавання...', async () => {
+        try {
+          setStatus('Перевіряємо товари та додаємо подарунок.', 'busy');
+          setMessage('Додавання подарунка...', 'busy');
+          const data = await jsonApi('/api/gifts/create', {
+            ...credentials(),
+            primary_display: document.getElementById('primary-display').value,
+            gift_display: document.getElementById('gift-display').value,
+          });
+          renderResult(data.items || []);
+          if (data.errors) throw new Error(data.items.map(item => item.message).filter(Boolean).join('; ') || 'Не вдалося додати подарунок.');
+          setStatus("Подарунок призначено. Оновлюємо список зв'язків.", 'ok');
+          setMessage('Подарунок призначено.', 'ok');
+          document.getElementById('primary-display').value = '';
+          document.getElementById('gift-display').value = '';
+          await loadAssociations(null, true);
+        } catch (error) {
+          setStatus(error.message, 'error');
+          setMessage(error.message, 'error');
+        }
+      });
+    }
+
+    async function deletePairs(pairs, button = deleteSelectedButton) {
+      if (!validateCredentials() || !pairs.length) return;
+      if (!confirm(`Видалити зв'язків: ${pairs.length}?`)) return;
+      await withBusy(button, 'Видалення...', async () => {
+        try {
+          setStatus(`Видаляємо зв'язків: ${pairs.length}.`, 'busy');
+          setMessage(`Видалення подарунків: ${pairs.length}.`, 'busy');
+          const data = await jsonApi('/api/gifts/delete', { ...credentials(), pairs });
+          renderResult(data.items || []);
+          if (data.errors) throw new Error(data.items.map(item => item.message).filter(Boolean).join('; ') || 'Не вдалося видалити подарунок.');
+          setStatus('Вибрані подарунки видалено. Оновлюємо список.', 'ok');
+          setMessage('Подарунки видалено.', 'ok');
+          await loadAssociations(null, true);
+        } catch (error) {
+          setStatus(error.message, 'error');
+          setMessage(error.message, 'error');
+        }
+      });
+    }
+
+    async function fileAction(endpoint, importing, button) {
+      const file = document.getElementById('file').files[0];
+      if (!file) {
+        setStatus('Оберіть Excel-файл перед початком операції.', 'error');
+        setMessage('Виберіть Excel-файл.', 'error');
+        return;
+      }
+      if (!validateCredentials()) return;
+      await withBusy(button, importing ? 'Виконуємо...' : 'Перевірка...', async () => {
+        const body = new FormData();
+        body.append('file', file);
+        for (const [key, value] of Object.entries(credentials())) body.append(key, value);
+        try {
+          setStatus(importing ? 'Передаємо перевірені рядки в Хорошоп.' : 'Перевіряємо артикул кожного рядка в Хорошоп.', 'busy');
+          setMessage(importing ? 'Виконання операцій з Excel...' : 'Перевірка Excel-файлу...', 'busy');
+          const response = await fetch(endpoint, { method: 'POST', body });
+          const data = await readResponse(response);
+          if (!response.ok) throw new Error(data.detail || data || 'Помилка сервера.');
+          renderResult(data.items || []);
+          const message = importing ? `Виконано: успішно ${data.imported}, помилок ${data.errors}.` : `Перевірено: готово до операції ${data.ready}, помилок ${data.errors}.`;
+          setStatus(message, data.errors ? 'error' : 'ok');
+          setMessage(message, data.errors ? 'error' : 'ok');
+          if (importing) await loadAssociations(null, true);
+        } catch (error) {
+          setStatus(error.message, 'error');
+          setMessage(error.message, 'error');
+        }
+      });
+    }
+
+    async function exportRegistry() {
+      if (!validateCredentials()) return;
+      await withBusy(document.getElementById('export'), 'Формування...', async () => {
+        try {
+          setStatus('Формуємо Excel зі всіма поточними подарунками.', 'busy');
+          setMessage('Створення Excel-вивантаження...', 'busy');
+          const response = await fetch('/api/gifts/export', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(credentials()),
+          });
+          if (!response.ok) {
+            const data = await readResponse(response);
+            throw new Error(data.detail || data || 'Помилка сервера.');
+          }
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = 'horoshop_gifts_registry.xlsx';
+          link.click();
+          URL.revokeObjectURL(url);
+          setStatus('Excel-файл сформовано.', 'ok');
+          setMessage('Excel-файл сформовано.', 'ok');
+        } catch (error) {
+          setStatus(error.message, 'error');
+          setMessage(error.message, 'error');
+        }
+      });
+    }
+
+    document.getElementById('create-gift').addEventListener('click', createGift);
+    document.getElementById('refresh').addEventListener('click', () => loadAssociations());
+    document.getElementById('preview').addEventListener('click', () => fileAction('/api/preview', false, document.getElementById('preview')));
+    document.getElementById('import').addEventListener('click', () => fileAction('/api/import', true, document.getElementById('import')));
+    document.getElementById('export').addEventListener('click', exportRegistry);
+    deleteSelectedButton.addEventListener('click', () => deletePairs(selectedAssociations()));
+    ['login', 'password', 'token'].forEach(id => document.getElementById(id).addEventListener('input', () => {
+      clearCredentialErrors();
+      if (!activeOperations) setConnection('Готово до роботи', '');
+    }));
   </script>
-</body></html>
+</body>
+</html>
