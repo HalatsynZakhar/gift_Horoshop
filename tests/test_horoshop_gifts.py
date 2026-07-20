@@ -4,6 +4,7 @@ import io
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from openpyxl import Workbook, load_workbook
 
@@ -83,6 +84,20 @@ class HoroshopGiftsTests(unittest.TestCase):
             repaired = config.read_text(encoding="utf-8")
         self.assertEqual(settings.public_log_file, Path(r"C:\ShareFiles\public") / "gifts.log")
         self.assertIn(r'"public_log_path":"C:\\ShareFiles\\public"', repaired)
+
+    def test_server_requires_explicit_config_json(self) -> None:
+        import gifts_server
+
+        with tempfile.TemporaryDirectory() as directory:
+            missing_config = Path(directory) / "config.json"
+            previous_settings = gifts_server.settings
+            try:
+                with patch.object(gifts_server, "CONFIG_FILE", missing_config):
+                    gifts_server.settings = None
+                    with self.assertRaisesRegex(RuntimeError, "Configuration file was not found"):
+                        gifts_server.get_settings()
+            finally:
+                gifts_server.settings = previous_settings
 
 
 if __name__ == "__main__":

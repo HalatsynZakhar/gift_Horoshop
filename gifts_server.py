@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import shutil
 import sys
 from pathlib import Path
 from typing import Any
@@ -64,20 +63,14 @@ class PublicLogStream:
         return False
 
 
-def ensure_config_file() -> None:
-    if CONFIG_FILE.exists():
-        return
-    example = PROJECT_DIR / "config.example.json"
-    if not example.exists():
-        raise RuntimeError(f"Configuration template was not found: {example}")
-    shutil.copyfile(example, CONFIG_FILE)
-    print(f"Created configuration file from template: {CONFIG_FILE}")
-
-
 def get_settings() -> Settings:
     global settings
     if settings is None:
-        ensure_config_file()
+        if not CONFIG_FILE.exists():
+            raise RuntimeError(
+                f"Configuration file was not found: {CONFIG_FILE}. "
+                "Create config.json from config.example.json and enter the actual settings."
+            )
         settings = load_settings(CONFIG_FILE)
     return settings
 
