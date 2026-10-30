@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+import base64
+import datetime
 import logging
 import sys
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -10,31 +13,41 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 from horoshop_gifts import (
+    ArticleMappings,
     CatalogIndex,
     Credentials,
+    GiftAssociation,
     GiftPlan,
     GiftRow,
     HoroshopClient,
     HoroshopGiftsError,
     Settings,
     build_excel_template,
+    build_failed_excel,
+    build_mappings_excel,
     build_registry_excel,
+    build_report_excel,
     import_results,
+    load_article_mappings,
     load_settings,
+    mutate_gifts,
     normalize,
+    parse_article_mappings,
     parse_excel_gifts,
     prepare_plan,
-    mutate_gifts,
+    save_article_mappings,
 )
 
 
 PROJECT_DIR = Path(__file__).resolve().parent
 CONFIG_FILE = PROJECT_DIR / "config.json"
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+MAPPINGS_FILE = PROJECT_DIR / "data" / "article_mappings.json"
 
 settings: Settings | None = None
 logger = logging.getLogger(__name__)
 service_output_stream: "PublicLogStream | None" = None
+mapping_lock = threading.Lock()
 
 
 class PublicLogStream:
@@ -89,7 +102,12 @@ def configure_service_output(runtime_settings: Settings) -> None:
     service_output_stream = PublicLogStream(selected_path, fallback_path)
     sys.stdout = service_output_stream
     sys.stderr = service_output_stream
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s", stream=service_output_stream, force=True)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        stream=service_output_stream,
+        force=True,
+    )
     logger.info("Service output is writing to %s", selected_path)
 
 
@@ -104,7 +122,38 @@ def credentials_from_json(data: dict[str, Any]) -> Credentials:
     return credentials
 
 
-async def upload_bytes(request: Request) -> tuple[bytes, Credentials]:
+def parse_bool(value: Any, default: bool = False) -> bool:
+    text = normalize(value).casefold()
+    if not text:
+        return default
+    return text not in {"0", "false", "ні", "нет", "no", "off"}
+
+
+def stored_mappings() -> ArticleMappings:
+    with mapping_lock:
+        return load_article_mappings(MAPPINGS_FILE)
+
+
+def add_to_stored_mappings(uploaded_mappings: ArticleMappings) -> ArticleMappings:
+    with mapping_lock:
+        combined = load_article_mappings(MAPPINGS_FILE).merged_with(uploaded_mappings)
+        save_article_mappings(MAPPINGS_FILE, combined)
+        return combined
+
+
+async def uploaded_mappings(form: Any) -> ArticleMappings | None:
+    mapping_file = form.get("mapping_file")
+    if mapping_file is None or not hasattr(mapping_file, "read") or not normalize(getattr(mapping_file, "filename", "")):
+        return None
+    if not str(getattr(mapping_file, "filename", "")).lower().endswith((".xlsx", ".xlsm")):
+        raise HoroshopGiftsError("Файл сопоставлень має бути .xlsx або .xlsm.")
+    mapping_contents = await mapping_file.read()
+    if not mapping_contents or len(mapping_contents) > MAX_UPLOAD_BYTES:
+        raise HoroshopGiftsError("Файл сопоставлень порожній або перевищує 20 МБ.")
+    return await asyncio.to_thread(parse_article_mappings, mapping_contents)
+
+
+async def upload_bytes(request: Request) -> tuple[bytes, Credentials, bool, ArticleMappings]:
     form = await request.form()
     uploaded = form.get("file")
     if uploaded is None or not hasattr(uploaded, "read"):
@@ -117,13 +166,20 @@ async def upload_bytes(request: Request) -> tuple[bytes, Credentials]:
         raise HoroshopGiftsError("Завантажений Excel-файл порожній.")
     if len(contents) > MAX_UPLOAD_BYTES:
         raise HoroshopGiftsError("Excel-файл перевищує обмеження 20 МБ.")
-    return contents, credentials_from_json(dict(form))
+    mappings = stored_mappings()
+    additional_mappings = await uploaded_mappings(form)
+    if additional_mappings is not None:
+        mappings = await asyncio.to_thread(add_to_stored_mappings, additional_mappings)
+    normalize_articles = parse_bool(form.get("normalize_articles"), True)
+    return contents, credentials_from_json(dict(form)), normalize_articles, mappings
 
 
 def serialise_plan(item: GiftPlan, status: str | None = None, message: str | None = None) -> dict[str, Any]:
     return {
         "primary_display": item.primary_display,
         "gift_display": item.gift_display,
+        "user_primary": item.user_primary or item.primary_display,
+        "user_gift": item.user_gift or item.gift_display,
         "primary_article": item.primary_article,
         "gift_article": item.gift_article,
         "row_number": item.row_number,
@@ -133,21 +189,81 @@ def serialise_plan(item: GiftPlan, status: str | None = None, message: str | Non
     }
 
 
+def with_failed_excel(result: dict[str, Any], failures: list[tuple[GiftPlan, str, str]]) -> dict[str, Any]:
+    if failures:
+        result["failed_excel"] = base64.b64encode(build_failed_excel(failures)).decode("ascii")
+        result["failed_excel_name"] = "horoshop_gifts_failed.xlsx"
+    return result
+
+
+def with_report_excel(
+    result: dict[str, Any],
+    entries: list[tuple[GiftPlan, str, str]],
+    filename: str = "horoshop_gifts_report.xlsx",
+) -> dict[str, Any]:
+    if entries:
+        result["report_excel"] = base64.b64encode(build_report_excel(entries)).decode("ascii")
+        result["report_excel_name"] = filename
+    return result
+
+
 def catalog_for(credentials: Credentials) -> tuple[CatalogIndex, HoroshopClient]:
     client = HoroshopClient(get_settings(), credentials)
     return CatalogIndex.from_raw(client.export_catalog()), client
 
 
-def preview_rows(rows: list[GiftRow], credentials: Credentials) -> dict[str, Any]:
+def preview_rows(
+    rows: list[GiftRow],
+    credentials: Credentials,
+    normalize_articles: bool = True,
+    mappings: ArticleMappings | None = None,
+) -> dict[str, Any]:
     catalog, _ = catalog_for(credentials)
-    plan = prepare_plan(rows, catalog)
-    return {"items": [serialise_plan(item) for item in plan], "ready": sum(item.ready for item in plan), "errors": sum(not item.ready for item in plan)}
+    plan = prepare_plan(rows, catalog, normalize_articles=normalize_articles, mappings=mappings)
+    grouped: dict[str, list[GiftPlan]] = {}
+    for item in plan:
+        if item.ready:
+            grouped.setdefault(item.primary_article, []).append(item)
+    pending_messages: dict[tuple[str, str], str] = {}
+    for primary_article, group in grouped.items():
+        product = catalog.by_article.get(primary_article)
+        if product is not None:
+            _, messages = mutate_gifts(product.gifts, group)
+            pending_messages.update(messages)
+
+    items: list[dict[str, Any]] = []
+    failures: list[tuple[GiftPlan, str, str]] = []
+    report_entries: list[tuple[GiftPlan, str, str]] = []
+    for item in plan:
+        if item.ready:
+            msg = pending_messages.get((item.primary_article, item.gift_article), "")
+            serialized = serialise_plan(item, "ready", msg)
+            items.append(serialized)
+            report_entries.append((item, "Готово до операції", msg))
+        else:
+            serialized = serialise_plan(item, "error")
+            items.append(serialized)
+            failures.append((item, "Помилка", serialized["message"]))
+
+    result: dict[str, Any] = {
+        "items": items,
+        "ready": sum(item.ready for item in plan),
+        "errors": sum(not item.ready for item in plan),
+    }
+    result = with_failed_excel(result, failures)
+    result = with_report_excel(result, report_entries, "horoshop_gifts_preview.xlsx")
+    return result
 
 
-def execute_rows(rows: list[GiftRow], credentials: Credentials) -> dict[str, Any]:
+def execute_rows(
+    rows: list[GiftRow],
+    credentials: Credentials,
+    normalize_articles: bool = True,
+    mappings: ArticleMappings | None = None,
+) -> dict[str, Any]:
     runtime_settings = get_settings()
     catalog, client = catalog_for(credentials)
-    plan = prepare_plan(rows, catalog)
+    plan = prepare_plan(rows, catalog, normalize_articles=normalize_articles, mappings=mappings)
     grouped: dict[str, list[GiftPlan]] = {}
     for item in plan:
         if item.ready:
@@ -168,19 +284,34 @@ def execute_rows(rows: list[GiftRow], credentials: Credentials) -> dict[str, Any
         api_results.update(import_results(client.import_products(payload[start : start + runtime_settings.batch_size])))
 
     result_items: list[dict[str, Any]] = []
+    failures: list[tuple[GiftPlan, str, str]] = []
+    report_entries: list[tuple[GiftPlan, str, str]] = []
     for item in plan:
         if not item.ready:
-            result_items.append(serialise_plan(item, "invalid"))
+            serialized = serialise_plan(item, "invalid")
+            result_items.append(serialized)
+            failures.append((item, "Помилка перевірки", serialized["message"]))
             continue
-        success, api_message = api_results.get(item.primary_article, (False, "API не повернуло результат для основного товару."))
+        success, api_message = api_results.get(
+            item.primary_article, (False, "API не повернуло результат для основного товару.")
+        )
         local_message = pending_messages.get((item.primary_article, item.gift_article), "")
         message = "; ".join(value for value in (local_message, api_message) if value)
-        result_items.append(serialise_plan(item, "synced" if success else "error", message))
-    return {
+        serialized = serialise_plan(item, "synced" if success else "error", message)
+        result_items.append(serialized)
+        if success:
+            report_entries.append((item, "Виконано", message))
+        else:
+            failures.append((item, "Помилка API", message))
+
+    result: dict[str, Any] = {
         "items": result_items,
         "imported": sum(item["status"] == "synced" for item in result_items),
         "errors": sum(item["status"] in {"error", "invalid"} for item in result_items),
     }
+    result = with_failed_excel(result, failures)
+    result = with_report_excel(result, report_entries, "horoshop_gifts_report.xlsx")
+    return result
 
 
 def list_associations(credentials: Credentials) -> dict[str, Any]:
@@ -231,13 +362,83 @@ async def unexpected_error(_: Request, error: Exception) -> JSONResponse:
 
 
 @app.get("/", response_class=HTMLResponse)
-def index() -> str:
-    return page_html()
+def index() -> HTMLResponse:
+    return HTMLResponse(page_html(), headers={"Cache-Control": "no-store"})
 
 
 @app.get("/api/template")
 def download_template() -> Response:
-    return Response(content=build_excel_template(), media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": 'attachment; filename="horoshop_gifts_template.xlsx"', "Cache-Control": "no-store"})
+    return Response(
+        content=build_excel_template(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": 'attachment; filename="horoshop_gifts_template.xlsx"',
+            "Cache-Control": "no-store",
+        },
+    )
+
+
+@app.get("/api/mappings/info")
+def mappings_info() -> dict[str, int]:
+    mappings = stored_mappings()
+    return {"sources": len(mappings.entries), "rules": sum(len(targets) for targets in mappings.entries.values())}
+
+
+@app.get("/api/mappings/export")
+def export_mappings() -> Response:
+    content = build_mappings_excel(stored_mappings())
+    return Response(
+        content,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": 'attachment; filename="horoshop_article_mappings.xlsx"',
+            "Cache-Control": "no-store",
+        },
+    )
+
+
+@app.post("/api/mappings")
+async def upload_mappings_endpoint(request: Request) -> dict[str, int]:
+    try:
+        mappings = await uploaded_mappings(await request.form())
+        if mappings is None:
+            raise HoroshopGiftsError("Оберіть Excel-файл сопоставлень.")
+        stored = await asyncio.to_thread(add_to_stored_mappings, mappings)
+        return {"sources": len(stored.entries), "rules": sum(len(targets) for targets in stored.entries.values())}
+    except (HoroshopGiftsError, ValueError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@app.post("/api/mappings/clear")
+async def clear_mappings() -> dict[str, Any]:
+    with mapping_lock:
+        backup_name = ""
+        if MAPPINGS_FILE.exists():
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_file = MAPPINGS_FILE.with_name(f"article_mappings_{timestamp}.json.bak")
+            latest_bak = MAPPINGS_FILE.with_suffix(".json.bak")
+            try:
+                content = MAPPINGS_FILE.read_text(encoding="utf-8")
+                backup_file.write_text(content, encoding="utf-8")
+                latest_bak.write_text(content, encoding="utf-8")
+                backup_name = backup_file.name
+            except OSError as error:
+                logger.warning("Could not backup mappings file: %s", error)
+        save_article_mappings(MAPPINGS_FILE, ArticleMappings.empty())
+        return {"status": "cleared", "backup": backup_name}
+
+
+@app.post("/api/server/restart")
+async def restart_service() -> dict[str, str]:
+    def do_exit() -> None:
+        import os
+        import time
+
+        time.sleep(0.5)
+        os._exit(0)
+
+    threading.Thread(target=do_exit, daemon=True).start()
+    return {"status": "restarting"}
 
 
 @app.post("/api/gifts/list")
@@ -254,9 +455,15 @@ async def export_gifts(request: Request) -> Response:
     try:
         data = await request.json()
         associations = await asyncio.to_thread(list_associations, credentials_from_json(data))
-        from horoshop_gifts import GiftAssociation
         contents = build_registry_excel([GiftAssociation(**item) for item in associations["items"]])
-        return Response(content=contents, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": 'attachment; filename="horoshop_gifts_registry.xlsx"', "Cache-Control": "no-store"})
+        return Response(
+            content=contents,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": 'attachment; filename="horoshop_gifts_registry.xlsx"',
+                "Cache-Control": "no-store",
+            },
+        )
     except (HoroshopGiftsError, ValueError) as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
@@ -269,7 +476,8 @@ async def create_gift(request: Request) -> dict[str, Any]:
         row = GiftRow(normalize(data.get("primary_display")), normalize(data.get("gift_display")), 1)
         if not row.primary_display or not row.gift_display:
             raise HoroshopGiftsError("Вкажіть артикул основного товару та подарунка.")
-        return await asyncio.to_thread(execute_rows, [row], credentials)
+        normalize_articles = parse_bool(data.get("normalize_articles"), True)
+        return await asyncio.to_thread(execute_rows, [row], credentials, normalize_articles, stored_mappings())
     except (HoroshopGiftsError, ValueError) as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
@@ -279,7 +487,11 @@ async def delete_gifts(request: Request) -> dict[str, Any]:
     try:
         data = await request.json()
         credentials = credentials_from_json(data)
-        return await asyncio.to_thread(execute_rows, rows_from_pairs(data.get("pairs"), "delete"), credentials)
+        normalize_articles = parse_bool(data.get("normalize_articles"), True)
+        rows = rows_from_pairs(data.get("pairs"), "delete")
+        use_mappings = parse_bool(data.get("use_mappings"), False)
+        mappings = stored_mappings() if use_mappings else ArticleMappings.empty()
+        return await asyncio.to_thread(execute_rows, rows, credentials, normalize_articles, mappings)
     except (HoroshopGiftsError, ValueError) as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
@@ -287,8 +499,14 @@ async def delete_gifts(request: Request) -> dict[str, Any]:
 @app.post("/api/preview")
 async def preview(request: Request) -> dict[str, Any]:
     try:
-        contents, credentials = await upload_bytes(request)
-        return await asyncio.to_thread(preview_rows, parse_excel_gifts(contents), credentials)
+        contents, credentials, normalize_articles, mappings = await upload_bytes(request)
+        return await asyncio.to_thread(
+            preview_rows,
+            parse_excel_gifts(contents),
+            credentials,
+            normalize_articles,
+            mappings,
+        )
     except (HoroshopGiftsError, ValueError) as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
@@ -296,8 +514,14 @@ async def preview(request: Request) -> dict[str, Any]:
 @app.post("/api/import")
 async def import_gifts(request: Request) -> dict[str, Any]:
     try:
-        contents, credentials = await upload_bytes(request)
-        return await asyncio.to_thread(execute_rows, parse_excel_gifts(contents), credentials)
+        contents, credentials, normalize_articles, mappings = await upload_bytes(request)
+        return await asyncio.to_thread(
+            execute_rows,
+            parse_excel_gifts(contents),
+            credentials,
+            normalize_articles,
+            mappings,
+        )
     except (HoroshopGiftsError, ValueError) as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
