@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Вхід — Подарунки Хорошоп</title>
+  <style>
+    :root {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #172033;
+      background: #f5f7fb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: linear-gradient(135deg, #eef4fc 0%, #dbe7f6 100%);
+    }
+    .login-card {
+      background: #fff;
+      border: 1px solid #c9d6e7;
+      border-radius: 12px;
+      padding: 36px 32px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 10px 30px rgba(23, 32, 51, 0.12);
+      border-top: 5px solid #e88944;
+    }
+    .brand-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .brand-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #172033, #2d456b);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      box-shadow: 0 6px 16px rgba(23, 32, 51, 0.25);
+    }
+    h1 {
+      margin: 0 0 6px;
+      font-size: 22px;
+      color: #172033;
+      font-weight: 700;
+    }
+    .subtitle {
+      margin: 0;
+      font-size: 13px;
+      color: #627088;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #344258;
+    }
+    input {
+      width: 100%;
+      min-height: 42px;
+      padding: 10px 12px;
+      border: 1px solid #b7c3d5;
+      border-radius: 6px;
+      font-size: 14px;
+      background: #fafcfb;
+      color: #172033;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input:focus {
+      outline: none;
+      border-color: #2d67b2;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(45, 103, 178, 0.18);
+    }
+    button {
+      width: 100%;
+      min-height: 44px;
+      padding: 11px;
+      border: 1px solid #2d67b2;
+      border-radius: 6px;
+      background: #2d67b2;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.15s, transform 0.08s, filter 0.15s;
+    }
+    button:hover:not(:disabled) {
+      background: #21569a;
+      border-color: #21569a;
+    }
+    button:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+    button:disabled {
+      opacity: 0.65;
+      cursor: wait;
+    }
+    .alert {
+      display: none;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      line-height: 1.4;
+      background: #fff0f2;
+      border: 1px solid #f5c2c7;
+      color: #892634;
+    }
+    .alert.visible {
+      display: block;
+    }
+    .hint-footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 12px;
+      color: #8896aa;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <div class="brand-header">
+      <div class="brand-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 12 20 22 4 22 4 12"></polyline>
+          <rect x="2" y="7" width="20" height="5"></rect>
+          <line x1="12" y1="22" x2="12" y2="7"></line>
+          <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path>
+          <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>
+        </svg>
+      </div>
+      <h1>Подарунки Хорошоп</h1>
+      <p class="subtitle">Вхід у панель керування</p>
+    </div>
+
+    <div id="error-alert" class="alert" role="alert"></div>
+
+    <form id="login-form" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label for="login">Логін</label>
+        <input id="login" name="login" type="text" autocomplete="username" required value="admin">
+      </div>
+      <div class="form-group">
+        <label for="password">Пароль</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required autofocus placeholder="Введіть пароль">
+      </div>
+      <button id="submit-btn" type="submit">Увійти</button>
+    </form>
+    <div class="hint-footer">
+      Сервіс синхронізації та керування подарунками
+    </div>
+  </div>
+
+  <script>
+    async function handleLogin(event) {
+      event.preventDefault();
+      const alertBox = document.getElementById('error-alert');
+      const submitBtn = document.getElementById('submit-btn');
+      const login = document.getElementById('login').value.trim();
+      const password = document.getElementById('password').value;
+
+      alertBox.className = 'alert';
+      alertBox.textContent = '';
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Перевірка...';
+
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ login, password })
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.detail || data.message || 'Невірний логін або пароль.');
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const nextUrl = urlParams.get('next') || data.redirect || '/';
+        window.location.href = nextUrl;
+      } catch (err) {
+        alertBox.textContent = err.message || 'Помилка авторизації.';
+        alertBox.className = 'alert visible';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Увійти';
+        document.getElementById('password').focus();
+      }
+    }
+  </script>
+</body>
+</html>

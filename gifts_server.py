@@ -3,6 +3,8 @@ from __future__ import annotations
 import asyncio
 import base64
 import datetime
+import hashlib
+import hmac
 import logging
 import sys
 import threading
@@ -10,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
 from horoshop_gifts import (
     ArticleMappings,
@@ -37,12 +39,45 @@ from horoshop_gifts import (
     prepare_plan,
     save_article_mappings,
 )
+from images_feed import images_feed
 
 
 PROJECT_DIR = Path(__file__).resolve().parent
 CONFIG_FILE = PROJECT_DIR / "config.json"
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024
 MAPPINGS_FILE = PROJECT_DIR / "data" / "article_mappings.json"
+
+SESSION_COOKIE_NAME = "gifts_session"
+ALT_COOKIE_NAME = "admin_session"
+SESSION_SALT = "gifts_horoshop_auth_salt_v1"
+
+
+def get_session_token(login: str, password: str) -> str:
+    key = f"{login}:{password}:{SESSION_SALT}".encode("utf-8")
+    return hashlib.sha256(key).hexdigest()
+
+
+def is_request_authenticated(request: Request, runtime_settings: Settings) -> bool:
+    if not runtime_settings.auth_enabled:
+        return True
+
+    expected_token = get_session_token(runtime_settings.auth_login, runtime_settings.auth_password)
+    cookie_token = request.cookies.get(SESSION_COOKIE_NAME) or request.cookies.get(ALT_COOKIE_NAME)
+    if cookie_token and hmac.compare_digest(cookie_token, expected_token):
+        return True
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Basic "):
+        try:
+            encoded = auth_header.split(" ", 1)[1].strip()
+            decoded = base64.b64decode(encoded).decode("utf-8")
+            username, password = decoded.split(":", 1)
+            if hmac.compare_digest(username, runtime_settings.auth_login) and hmac.compare_digest(password, runtime_settings.auth_password):
+                return True
+        except Exception:
+            pass
+
+    return False
 
 settings: Settings | None = None
 logger = logging.getLogger(__name__)
@@ -112,14 +147,13 @@ def configure_service_output(runtime_settings: Settings) -> None:
 
 
 def credentials_from_json(data: dict[str, Any]) -> Credentials:
-    credentials = Credentials(
-        login=normalize(data.get("login")),
-        password=normalize(data.get("password")),
-        token=normalize(data.get("token")),
-    )
-    if not credentials.token and (not credentials.login or not credentials.password):
+    runtime_settings = get_settings()
+    login = normalize(data.get("login")) or runtime_settings.login
+    password = normalize(data.get("password")) or runtime_settings.password
+    token = normalize(data.get("token"))
+    if not token and (not login or not password):
         raise HoroshopGiftsError("Вкажіть логін і пароль API або чинний токен.")
-    return credentials
+    return Credentials(login=login, password=password, token=token)
 
 
 def parse_bool(value: Any, default: bool = False) -> bool:
@@ -175,6 +209,8 @@ async def upload_bytes(request: Request) -> tuple[bytes, Credentials, bool, Arti
 
 
 def serialise_plan(item: GiftPlan, status: str | None = None, message: str | None = None) -> dict[str, Any]:
+    primary_key = item.primary_display or item.user_primary or item.primary_article
+    gift_key = item.gift_display or item.user_gift or item.gift_article
     return {
         "primary_display": item.primary_display,
         "gift_display": item.gift_display,
@@ -182,6 +218,8 @@ def serialise_plan(item: GiftPlan, status: str | None = None, message: str | Non
         "user_gift": item.user_gift or item.gift_display,
         "primary_article": item.primary_article,
         "gift_article": item.gift_article,
+        "primary_info": images_feed.get_product_meta(primary_key),
+        "gift_info": images_feed.get_product_meta(gift_key),
         "row_number": item.row_number,
         "action": item.action,
         "status": status or ("ready" if item.ready else "error"),
@@ -324,10 +362,13 @@ def list_associations(credentials: Credentials) -> dict[str, Any]:
                 "gift_display": item.gift_display,
                 "primary_article": item.primary_article,
                 "gift_article": item.gift_article,
+                "primary_info": images_feed.get_product_meta(item.primary_display or item.primary_article),
+                "gift_info": images_feed.get_product_meta(item.gift_display or item.gift_article),
             }
             for item in associations
         ],
         "count": len(associations),
+        "images_loaded": images_feed.is_loaded(),
     }
 
 
@@ -352,7 +393,30 @@ def page_html() -> str:
     return (PROJECT_DIR / "web_ui.html").read_text(encoding="utf-8")
 
 
+def login_html() -> str:
+    return (PROJECT_DIR / "login.html").read_text(encoding="utf-8")
+
+
 app = FastAPI(title="Подарунки Хорошоп")
+
+
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next):
+    runtime_settings = get_settings()
+    path = request.url.path
+
+    if path in {"/login", "/api/login", "/favicon.ico", "/api/auth/status"}:
+        return await call_next(request)
+
+    if not is_request_authenticated(request, runtime_settings):
+        if path.startswith("/api/"):
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Потрібна авторизація (Необхідно увійти у систему)."},
+            )
+        return RedirectResponse(url=f"/login?next={path}", status_code=303)
+
+    return await call_next(request)
 
 
 @app.exception_handler(Exception)
@@ -361,9 +425,105 @@ async def unexpected_error(_: Request, error: Exception) -> JSONResponse:
     return JSONResponse(status_code=500, content={"detail": "Внутрішня помилка сервера. Перевірте публічний лог."})
 
 
+@app.get("/login", response_class=HTMLResponse)
+def login_page(request: Request) -> Response:
+    runtime_settings = get_settings()
+    if is_request_authenticated(request, runtime_settings):
+        return RedirectResponse(url="/", status_code=303)
+    return HTMLResponse(
+        content=login_html(),
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"},
+    )
+
+
+@app.post("/api/login")
+async def login_endpoint(request: Request) -> Response:
+    runtime_settings = get_settings()
+    login_val = ""
+    password_val = ""
+
+    content_type = request.headers.get("content-type", "")
+    if "application/json" in content_type:
+        try:
+            body = await request.json()
+            if isinstance(body, dict):
+                login_val = normalize(body.get("login") or body.get("username"))
+                password_val = normalize(body.get("password"))
+        except Exception:
+            pass
+    else:
+        try:
+            form = await request.form()
+            login_val = normalize(form.get("login") or form.get("username"))
+            password_val = normalize(form.get("password"))
+        except Exception:
+            pass
+
+    expected_login = runtime_settings.auth_login
+    expected_password = runtime_settings.auth_password
+
+    if not (hmac.compare_digest(login_val, expected_login) and hmac.compare_digest(password_val, expected_password)):
+        return JSONResponse(
+            status_code=401,
+            content={"success": False, "detail": "Невірний логін або пароль."},
+        )
+
+    token = get_session_token(expected_login, expected_password)
+    response = JSONResponse(
+        content={"success": True, "message": "Авторизація успішна.", "redirect": "/"},
+    )
+    response.set_cookie(
+        key=SESSION_COOKIE_NAME,
+        value=token,
+        max_age=30 * 24 * 3600,
+        httponly=True,
+        samesite="lax",
+        secure=False,
+        path="/",
+    )
+    response.set_cookie(
+        key=ALT_COOKIE_NAME,
+        value=token,
+        max_age=30 * 24 * 3600,
+        httponly=True,
+        samesite="lax",
+        secure=False,
+        path="/",
+    )
+    return response
+
+
+@app.post("/api/logout")
+def logout_endpoint() -> Response:
+    response = JSONResponse(content={"success": True, "redirect": "/login"})
+    response.delete_cookie(key=SESSION_COOKIE_NAME, path="/")
+    response.delete_cookie(key=ALT_COOKIE_NAME, path="/")
+    return response
+
+
+@app.get("/api/auth/status")
+def auth_status(request: Request) -> dict[str, Any]:
+    runtime_settings = get_settings()
+    authenticated = is_request_authenticated(request, runtime_settings)
+    return {
+        "authenticated": authenticated,
+        "auth_enabled": runtime_settings.auth_enabled,
+        "user": runtime_settings.auth_login if authenticated else None,
+        "has_horoshop_credentials": bool(runtime_settings.login and runtime_settings.password),
+        "horoshop_login": runtime_settings.login if authenticated else None,
+        "domain": runtime_settings.domain if authenticated else None,
+    }
+
+
 @app.get("/", response_class=HTMLResponse)
-def index() -> HTMLResponse:
-    return HTMLResponse(page_html(), headers={"Cache-Control": "no-store"})
+def index(request: Request) -> Response:
+    runtime_settings = get_settings()
+    if not is_request_authenticated(request, runtime_settings):
+        return RedirectResponse(url="/login", status_code=303)
+    return HTMLResponse(
+        content=page_html(),
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"},
+    )
 
 
 @app.get("/api/template")
@@ -526,12 +686,42 @@ async def import_gifts(request: Request) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
 
+@app.get("/api/products/info")
+def products_info(articles: str = "") -> dict[str, Any]:
+    raw_list = [a.strip() for a in articles.replace(";", ",").split(",") if a.strip()]
+    return {
+        "items": [images_feed.get_product_meta(art) for art in raw_list],
+        "images_loaded": images_feed.is_loaded(),
+    }
+
+
+@app.get("/api/images/status")
+def images_status() -> dict[str, Any]:
+    return {
+        "loaded": images_feed.is_loaded(),
+        "count": images_feed.count(),
+        "url": images_feed.xml_url,
+        "error": images_feed.last_error(),
+    }
+
+
+@app.post("/api/images/refresh")
+def images_refresh() -> dict[str, Any]:
+    threading.Thread(target=images_feed.load, kwargs={"force_refresh": True}, daemon=True).start()
+    return {"status": "refreshing", "url": images_feed.xml_url}
+
+
 def run_server() -> None:
     import uvicorn
 
     runtime_settings = get_settings()
     configure_service_output(runtime_settings)
+    threading.Thread(target=images_feed.load, daemon=True).start()
     uvicorn.run(app, host=runtime_settings.host, port=runtime_settings.port)
+
+
+# Фонове завантаження XML-фіду зображень при запуску
+threading.Thread(target=images_feed.load, daemon=True).start()
 
 
 if __name__ == "__main__":

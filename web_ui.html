@@ -124,6 +124,317 @@
       .section-note { margin-top: 7px; }
       .actions > button, .actions > .link-button { width: 100%; text-align: center; }
     }
+    /* Product Visuals & Thumbnails */
+    .prod-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      background: #ffffff;
+      border: 1px solid #d8e2ef;
+      border-radius: 6px;
+      padding: 4px 8px 4px 4px;
+      box-shadow: 0 1px 3px rgba(23, 32, 51, 0.05);
+      transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+      vertical-align: middle;
+      max-width: 100%;
+    }
+    .prod-pill:hover {
+      border-color: #2d67b2;
+      box-shadow: 0 4px 10px rgba(45, 103, 178, 0.12);
+      transform: translateY(-1px);
+    }
+    .prod-pill.is-gift {
+      background: #fffdfb;
+      border-color: #f7d5bd;
+    }
+    .prod-pill.is-gift:hover {
+      border-color: #e88944;
+      box-shadow: 0 4px 10px rgba(232, 137, 68, 0.15);
+    }
+    .prod-img-box {
+      width: 48px;
+      height: 48px;
+      border-radius: 5px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+      cursor: zoom-in;
+      position: relative;
+    }
+    .prod-img-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      transition: transform .2s ease;
+      background: #ffffff;
+    }
+    .prod-img-box:hover img {
+      transform: scale(1.15);
+    }
+    .zoom-hint {
+      position: absolute;
+      bottom: 2px;
+      right: 2px;
+      font-size: 10px;
+      opacity: 0;
+      transition: opacity .15s;
+      background: rgba(23, 32, 51, 0.7);
+      color: #fff;
+      border-radius: 3px;
+      padding: 1px 3px;
+      line-height: 1;
+      pointer-events: none;
+    }
+    .prod-img-box:hover .zoom-hint {
+      opacity: 1;
+    }
+    .prod-no-img {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #edf2f7;
+      color: #728198;
+      font-size: 10px;
+      font-weight: 700;
+      text-align: center;
+      padding: 2px;
+      word-break: break-all;
+    }
+    .prod-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .prod-art {
+      font-size: 13px;
+      font-weight: 700;
+      color: #172033;
+      font-family: Consolas, monospace;
+      word-break: break-all;
+      line-height: 1.25;
+    }
+    .prod-brand {
+      font-size: 11px;
+      color: #556782;
+      font-weight: 600;
+      max-width: 140px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.2;
+    }
+    .gift-mini-badge {
+      font-size: 10px;
+      font-weight: 700;
+      color: #b85a19;
+      background: #fff0e3;
+      border: 1px solid #fedbc0;
+      border-radius: 3px;
+      padding: 1px 5px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      width: fit-content;
+      line-height: 1.3;
+    }
+    .prod-text-wrap {
+      display: inline-flex;
+      flex-direction: column;
+      gap: 2px;
+      vertical-align: middle;
+    }
+    .prod-brand-pill {
+      font-size: 11px;
+      color: #556782;
+      font-weight: 600;
+    }
+    .arrow-icon {
+      color: #e88944;
+      font-size: 18px;
+      font-weight: 900;
+      user-select: none;
+    }
+
+    /* Live Preview Box */
+    .live-preview-box {
+      background: #f8fafc;
+      border: 1px solid #d5deeb;
+      border-radius: 6px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .live-preview-box .arrow-icon {
+      margin: 0 4px;
+    }
+
+    /* Feed Status Badge in Header */
+    .feed-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.12);
+      color: #dfe7f6;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      cursor: pointer;
+      transition: background .15s ease, border-color .15s ease;
+      white-space: nowrap;
+    }
+    .feed-status-badge:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.35);
+    }
+
+    /* Toggle Control */
+    .toggle-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #344258;
+      cursor: pointer;
+      user-select: none;
+      background: #edf2f9;
+      padding: 6px 10px;
+      border-radius: 4px;
+      border: 1px solid #ccd8e8;
+    }
+    .toggle-control input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      min-height: 0;
+      cursor: pointer;
+    }
+
+    /* Lightbox Modal */
+    .lightbox-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      padding: 20px;
+    }
+    .lightbox-overlay.visible {
+      display: flex;
+      animation: fadeIn .15s ease;
+    }
+    .lightbox-dialog {
+      background: #ffffff;
+      border-radius: 10px;
+      max-width: 580px;
+      width: 100%;
+      box-shadow: 0 20px 48px rgba(0,0,0,0.4);
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      max-height: 90vh;
+    }
+    .lightbox-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #edf2f7;
+      color: #475569;
+      border: none;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+      transition: background .15s;
+    }
+    .lightbox-close:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    .lightbox-header {
+      padding: 14px 18px 10px;
+      border-bottom: 1px solid #edf2f7;
+    }
+    .lightbox-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1e293b;
+      padding-right: 36px;
+    }
+    .lightbox-brand {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 2px;
+      font-weight: 600;
+    }
+    .lightbox-body {
+      padding: 18px;
+      background: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 280px;
+      max-height: 520px;
+      overflow: hidden;
+    }
+    .lightbox-body img {
+      max-width: 100%;
+      max-height: 480px;
+      object-fit: contain;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      background: #fff;
+    }
+    .lightbox-footer {
+      padding: 12px 18px;
+      border-top: 1px solid #edf2f7;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #ffffff;
+      font-size: 13px;
+    }
+    .lightbox-art-badge {
+      font-family: Consolas, monospace;
+      font-weight: 700;
+      color: #2d67b2;
+      background: #eef5ff;
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid #c9defa;
+    }
+    .lightbox-open-link {
+      color: #2d67b2;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .lightbox-open-link:hover {
+      text-decoration: underline;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(.97); }
+      to { opacity: 1; transform: scale(1); }
+    }
   </style>
 </head>
 <body>
@@ -133,7 +444,16 @@
         <h1>Подарунки Хорошоп</h1>
         <p class="subtitle">Масове та ручне керування подарунками товарів і їхніх варіацій.</p>
       </div>
-      <div class="connection" id="connection-status" aria-live="polite"><span class="connection-dot" id="connection-dot"></span><span id="connection-text">Готово до роботи</span></div>
+      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end;">
+          <span id="images-status-badge" class="feed-status-badge" title="Джерело: http://176.104.6.149:8080/xml/images_export.xml (клікніть для оновлення)">🖼️ Фото: завантаження...</span>
+          <span style="font-size: 13px; color: #dfe7f6; background: rgba(255,255,255,0.12); padding: 5px 10px; border-radius: 4px; display: inline-flex; align-items: center; gap: 6px;">
+            👤 Користувач: <b id="header-user-name">admin</b>
+          </span>
+          <button id="logout-btn" type="button" class="secondary" style="min-height: 30px; padding: 4px 10px; font-size: 12px; background: #fff; color: #172033; border-color: #fff; cursor: pointer;">Вийти</button>
+        </div>
+        <div class="connection" id="connection-status" aria-live="polite"><span class="connection-dot" id="connection-dot"></span><span id="connection-text">Готово до роботи</span></div>
+      </div>
     </div>
   </header>
 
@@ -141,11 +461,15 @@
     <section class="section">
       <div class="section-head">
         <h2>Доступ до API</h2>
-        <p class="section-note">Для кожної операції потрібні логін і пароль API або чинний токен. Дані не зберігаються у браузері.</p>
+        <p class="section-note">Логін і пароль API Хорошоп за замовчуванням підтягуються з config.json. Поля нижче можна залишити порожніми (заповнюйте лише за потреби використати інший акаунт чи токен).</p>
+      </div>
+      <div id="credentials-badge-container" style="display:none; margin-bottom:14px; padding:10px 12px; border-radius:4px; background:#e7f7ee; border:1px solid #bce6cf; color:#175e3e; font-size:13px;">
+        <span style="font-weight:700;">✅ Логін і пароль API Хорошоп завантажено з config.json</span>
+        <span id="credentials-user-hint" style="color:#206e49; margin-left:6px;"></span>.
       </div>
       <div class="grid">
-        <label>Логін API<input id="login" autocomplete="username"></label>
-        <label>Пароль API<input id="password" type="password" autocomplete="current-password"></label>
+        <label>Логін API<input id="login" autocomplete="username" placeholder="з config.json (за замовчуванням)"></label>
+        <label>Пароль API<input id="password" type="password" autocomplete="current-password" placeholder="••••••••••••"></label>
         <label>Токен API<input id="token"><span class="hint">Вкажіть токен замість логіна та пароля, якщо він уже отриманий.</span></label>
       </div>
     </section>
@@ -159,6 +483,7 @@
         <label>Артикул основного товару<input id="primary-display" placeholder="Наприклад, 01063"></label>
         <label>Артикул подарунка<input id="gift-display" placeholder="Наприклад, GIFT-01"></label>
       </div>
+      <div id="single-live-preview" class="live-preview-box" style="display:none; margin-top:12px;"></div>
       <div class="actions">
         <button id="create-gift" type="button">Додати подарунок</button>
         <button class="secondary" id="download-report-one" type="button" hidden>Завантажити детальний звіт</button>
@@ -222,6 +547,11 @@
           <button class="secondary" id="refresh" type="button">Оновити список</button>
           <button class="secondary" id="export" type="button">Вивантажити Excel</button>
           <button class="danger" id="delete-selected" type="button" disabled>Видалити вибрані</button>
+          <input id="search-registry" placeholder="🔍 Пошук за артикулом або брендом..." style="max-width: 260px; min-height: 36px; padding: 6px 10px; font-size: 13px;">
+          <label class="toggle-control" title="Увімкнути/вимкнути відображення картинок товарів з XML-фіду">
+            <input type="checkbox" id="toggle-images" checked>
+            <span>🖼️ Показувати фото</span>
+          </label>
         </div>
         <span class="selection-count" id="selection-count">Вибрано: <strong>0</strong></span>
       </div>
@@ -234,11 +564,30 @@
     </section>
   </main>
 
+  <!-- МОДАЛЬНЕ ВІКНО ПЕРЕГЛЯДУ ЗОБРАЖЕННЯ ТОВАРУ (LIGHTBOX) -->
+  <div id="lightbox-modal" class="lightbox-overlay" onclick="closeLightbox()">
+    <div class="lightbox-dialog" onclick="event.stopPropagation()">
+      <button class="lightbox-close" onclick="closeLightbox()" title="Закрити (Esc)">✕</button>
+      <div class="lightbox-header">
+        <div id="lightbox-title" class="lightbox-title">Товар</div>
+        <div id="lightbox-brand" class="lightbox-brand"></div>
+      </div>
+      <div class="lightbox-body">
+        <img id="lightbox-img" src="" alt="Товар">
+      </div>
+      <div class="lightbox-footer">
+        <span id="lightbox-art" class="lightbox-art-badge"></span>
+        <a id="lightbox-link" href="#" target="_blank" rel="noopener noreferrer" class="lightbox-open-link">Відкрити фото у повний розмір ↗</a>
+      </div>
+    </div>
+  </div>
+
   <script>
     let associations = [];
     let activeOperations = 0;
     let failedExcelUrl = '';
     let reportExcelUrl = '';
+    let serverHasCredentials = false;
     const state = document.getElementById('state');
     const result = document.getElementById('result');
     const log = document.getElementById('activity-log');
@@ -350,10 +699,34 @@
       } catch (_) {}
     }
 
+    async function checkAuthStatus() {
+      try {
+        const response = await fetch('/api/auth/status');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.user) {
+            const userEl = document.getElementById('header-user-name');
+            if (userEl) userEl.textContent = data.user;
+          }
+          if (data.has_horoshop_credentials) {
+            serverHasCredentials = true;
+            const badge = document.getElementById('credentials-badge-container');
+            const hint = document.getElementById('credentials-user-hint');
+            if (badge) badge.style.display = 'block';
+            if (hint && data.horoshop_login) hint.textContent = `(${data.horoshop_login})`;
+            const loginEl = document.getElementById('login');
+            if (loginEl && !loginEl.value) {
+              loginEl.placeholder = data.horoshop_login || 'з config.json';
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
     function validateCredentials() {
       const data = credentials();
       clearCredentialErrors();
-      if (data.token || (data.login && data.password)) return true;
+      if (data.token || (data.login && data.password) || serverHasCredentials) return true;
       if (!data.login) document.getElementById('login').classList.add('input-error');
       if (!data.password) document.getElementById('password').classList.add('input-error');
       setStatus('Вкажіть логін і пароль API або чинний токен.', 'error');
@@ -399,6 +772,10 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
+      if (response.status === 401) {
+        window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
+        return {};
+      }
       const data = await readResponse(response);
       if (!response.ok) throw new Error(data.detail || data || 'Помилка сервера.');
       return data;
@@ -412,9 +789,85 @@
       return action === 'delete' ? 'Видалення' : 'Додавання';
     }
 
-    function formatDisplayWithSource(display, userInput) {
-      if (!userInput || userInput === display) return esc(display);
-      return `${esc(display)} <span class="hint">(${esc(userInput)})</span>`;
+    let showImages = localStorage.getItem('horoshop_gifts_show_images') !== 'false';
+
+    function onImgErr(img, art) {
+      img.onerror = null;
+      img.style.display = 'none';
+      if (img.parentElement) {
+        img.parentElement.innerHTML = `<div class="prod-no-img"><span>${esc(art ? art.slice(0, 4) : '?')}</span></div>`;
+      }
+    }
+
+    function openLightbox(art, brand, url) {
+      if (!url) return;
+      const modal = document.getElementById('lightbox-modal');
+      const imgEl = document.getElementById('lightbox-img');
+      const titleEl = document.getElementById('lightbox-title');
+      const brandEl = document.getElementById('lightbox-brand');
+      const artEl = document.getElementById('lightbox-art');
+      const linkEl = document.getElementById('lightbox-link');
+
+      titleEl.textContent = `Товар: ${art}`;
+      brandEl.textContent = brand ? `Бренд: ${brand}` : '';
+      artEl.textContent = `Артикул: ${art}`;
+      imgEl.src = url;
+      linkEl.href = url;
+      modal.classList.add('visible');
+    }
+
+    function closeLightbox() {
+      const modal = document.getElementById('lightbox-modal');
+      if (modal) modal.classList.remove('visible');
+      const imgEl = document.getElementById('lightbox-img');
+      if (imgEl) imgEl.src = '';
+    }
+
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') closeLightbox();
+    });
+
+    function renderProductPill(art, info = null, isGift = false) {
+      if (!art) return '<span class="empty-val">—</span>';
+      const artClean = esc(art);
+      const imgUrl = (info && info.image) ? info.image : '';
+      const brand = (info && info.brand) ? info.brand : '';
+      const name = (info && info.name) ? info.name : '';
+      const brandEsc = esc(brand);
+      const titleAttr = esc(name || (brand ? `${brand} — ${art}` : art));
+
+      if (!showImages) {
+        return `<div class="prod-text-wrap" title="${titleAttr}">
+          <span class="prod-art">${artClean}</span>
+          ${brandEsc ? `<span class="prod-brand-pill">${brandEsc}</span>` : ''}
+          ${isGift ? `<span class="gift-mini-badge">🎁 Подарунок</span>` : ''}
+        </div>`;
+      }
+
+      const thumbHtml = imgUrl
+        ? `<img src="${esc(imgUrl)}" alt="${artClean}" loading="lazy" onerror="onImgErr(this, '${artClean}')"><span class="zoom-hint">🔍</span>`
+        : `<div class="prod-no-img"><span>${artClean.slice(0, 4)}</span></div>`;
+
+      return `
+        <div class="prod-pill ${isGift ? 'is-gift' : ''}" title="${titleAttr}">
+          <div class="prod-img-box" onclick="openLightbox('${artClean}', '${brandEsc}', '${esc(imgUrl)}')" title="Клікніть для збільшення">
+            ${thumbHtml}
+          </div>
+          <div class="prod-info">
+            <span class="prod-art">${artClean}</span>
+            ${brandEsc ? `<span class="prod-brand" title="${brandEsc}">${brandEsc}</span>` : ''}
+            ${isGift ? `<span class="gift-mini-badge">🎁 Подарунок</span>` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderProductCell(display, userInput, info, isGift = false) {
+      const pillHtml = renderProductPill(display, info, isGift);
+      if (userInput && userInput !== display) {
+        return `<div class="cell-flex">${pillHtml}<span class="hint" style="font-size:11px; margin-top:3px; display:block;">введено: ${esc(userInput)}</span></div>`;
+      }
+      return pillHtml;
     }
 
     function renderResult(items) {
@@ -422,7 +875,19 @@
         result.innerHTML = '<p class="empty">У файлі немає операцій.</p>';
         return;
       }
-      result.innerHTML = `<table><thead><tr><th>Рядок</th><th>Операція</th><th>Основний товар</th><th>Подарунок</th><th>Стан</th></tr></thead><tbody>${items.map(item => `<tr><td>${item.row_number}</td><td>${esc(actionText(item.action))}</td><td>${formatDisplayWithSource(item.primary_display, item.user_primary)}</td><td>${formatDisplayWithSource(item.gift_display, item.user_gift)}</td><td><span class="tag ${esc(item.status)}">${esc(statusText(item.status))}</span>${item.message ? '<br>' + esc(item.message) : ''}</td></tr>`).join('')}</tbody></table>`;
+      result.innerHTML = `<table><thead><tr>
+        <th style="width:50px;">Рядок</th>
+        <th style="width:120px;">Операція</th>
+        <th style="min-width:240px;">Основний товар</th>
+        <th style="min-width:240px;">Подарунок</th>
+        <th>Стан</th>
+      </tr></thead><tbody>${items.map(item => `<tr>
+        <td>${item.row_number}</td>
+        <td>${esc(actionText(item.action))}</td>
+        <td>${renderProductCell(item.primary_display, item.user_primary, item.primary_info, false)}</td>
+        <td>${renderProductCell(item.gift_display, item.user_gift, item.gift_info, true)}</td>
+        <td><span class="tag ${esc(item.status)}">${esc(statusText(item.status))}</span>${item.message ? '<br><small>' + esc(item.message) + '</small>' : ''}</td>
+      </tr>`).join('')}</tbody></table>`;
     }
 
     function selectedAssociations() {
@@ -440,21 +905,61 @@
       }
     }
 
-    function renderState(data) {
-      associations = data.items || [];
+    function renderRegistryTable(items) {
       if (!associations.length) {
         state.innerHTML = '<p class="empty">У Хорошоп поки немає призначених подарунків.</p>';
         updateSelectionControls();
         return;
       }
-      state.innerHTML = `<table><thead><tr><th class="check-cell"><input id="select-all" type="checkbox" aria-label="Вибрати всі зв'язки"></th><th>Основний товар</th><th>Подарунок</th><th class="action-cell">Дія</th></tr></thead><tbody>${associations.map((item, index) => `<tr><td class="check-cell"><input type="checkbox" data-select="${index}" aria-label="Вибрати зв'язок ${index + 1}"></td><td>${esc(item.primary_display)}</td><td>${esc(item.gift_display)}</td><td class="action-cell"><button class="danger" data-delete-one="${index}" type="button">Видалити</button></td></tr>`).join('')}</tbody></table>`;
-      document.getElementById('select-all').addEventListener('change', event => {
+      if (!items.length) {
+        state.innerHTML = '<p class="empty">За вашим запитом не знайдено жодного зв\'язку.</p>';
+        updateSelectionControls();
+        return;
+      }
+      state.innerHTML = `<table><thead><tr>
+        <th class="check-cell"><input id="select-all" type="checkbox" aria-label="Вибрати всі зв'язки"></th>
+        <th style="min-width:240px;">Основний товар</th>
+        <th style="width:36px; text-align:center;"></th>
+        <th style="min-width:240px;">Подарунок</th>
+        <th class="action-cell">Дія</th>
+      </tr></thead><tbody>${items.map(item => {
+        const origIndex = associations.indexOf(item);
+        return `<tr>
+          <td class="check-cell"><input type="checkbox" data-select="${origIndex}" aria-label="Вибрати зв'язок ${origIndex + 1}"></td>
+          <td>${renderProductPill(item.primary_display || item.primary_article, item.primary_info, false)}</td>
+          <td style="text-align:center;"><span class="arrow-icon">➔</span></td>
+          <td>${renderProductPill(item.gift_display || item.gift_article, item.gift_info, true)}</td>
+          <td class="action-cell"><button class="danger" data-delete-one="${origIndex}" type="button">Видалити</button></td>
+        </tr>`;
+      }).join('')}</tbody></table>`;
+
+      document.getElementById('select-all')?.addEventListener('change', event => {
         document.querySelectorAll('[data-select]').forEach(box => { box.checked = event.target.checked; });
         updateSelectionControls();
       });
       document.querySelectorAll('[data-select]').forEach(box => box.addEventListener('change', updateSelectionControls));
       document.querySelectorAll('[data-delete-one]').forEach(button => button.addEventListener('click', () => deletePairs([associations[Number(button.dataset.deleteOne)]], button)));
       updateSelectionControls();
+    }
+
+    function applyFilter() {
+      const query = (document.getElementById('search-registry')?.value || '').trim().toLowerCase();
+      let filtered = associations;
+      if (query) {
+        filtered = associations.filter(item => {
+          const p = String(item.primary_display || item.primary_article || '').toLowerCase();
+          const g = String(item.gift_display || item.gift_article || '').toLowerCase();
+          const pb = String(item.primary_info?.brand || '').toLowerCase();
+          const gb = String(item.gift_info?.brand || '').toLowerCase();
+          return p.includes(query) || g.includes(query) || pb.includes(query) || gb.includes(query);
+        });
+      }
+      renderRegistryTable(filtered);
+    }
+
+    function renderState(data) {
+      associations = data.items || [];
+      applyFilter();
     }
 
     async function loadAssociations(button = document.getElementById('refresh'), quiet = false) {
@@ -604,6 +1109,10 @@
           setStatus(importing ? 'Передаємо перевірені рядки в Хорошоп.' : 'Перевіряємо артикул кожного рядка в Хорошоп.', 'busy');
           setMessage(importing ? 'Виконання операцій з Excel...' : 'Перевірка Excel-файлу...', 'busy');
           const response = await fetch(endpoint, { method: 'POST', body });
+          if (response.status === 401) {
+            window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
+            return;
+          }
           const data = await readResponse(response);
           if (!response.ok) throw new Error(data.detail || data || 'Помилка сервера.');
           renderResult(data.items || []);
@@ -633,6 +1142,10 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(credentials()),
           });
+          if (response.status === 401) {
+            window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
+            return;
+          }
           if (!response.ok) {
             const data = await readResponse(response);
             throw new Error(data.detail || data || 'Помилка сервера.');
@@ -718,11 +1231,114 @@
     document.getElementById('save-mappings').addEventListener('click', saveMappings);
     document.getElementById('clear-mappings').addEventListener('click', clearMappings);
     deleteSelectedButton.addEventListener('click', () => deletePairs(selectedAssociations()));
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async () => {
+        try {
+          await fetch('/api/logout', { method: 'POST' });
+        } finally {
+          window.location.href = '/login';
+        }
+      });
+    }
     ['login', 'password', 'token'].forEach(id => document.getElementById(id).addEventListener('input', () => {
       clearCredentialErrors();
       if (!activeOperations) setConnection('Готово до роботи', '');
     }));
+    let previewDebounceTimer = null;
+    async function updateSingleLivePreview() {
+      const primaryVal = document.getElementById('primary-display').value.trim();
+      const giftVal = document.getElementById('gift-display').value.trim();
+      const container = document.getElementById('single-live-preview');
+      if (!container) return;
+      if (!primaryVal && !giftVal) {
+        container.style.display = 'none';
+        container.innerHTML = '';
+        return;
+      }
+      container.style.display = 'flex';
+      const articlesToFetch = [primaryVal, giftVal].filter(Boolean);
+      try {
+        const res = await fetch(`/api/products/info?articles=${encodeURIComponent(articlesToFetch.join(','))}`);
+        const data = await readResponse(res);
+        const metaMap = {};
+        (data.items || []).forEach(m => { if (m.article) metaMap[m.article.toUpperCase()] = m; });
+        const pInfo = metaMap[primaryVal.toUpperCase()] || null;
+        const gInfo = metaMap[giftVal.toUpperCase()] || null;
+        container.innerHTML = `
+          <div style="font-size:12px; font-weight:700; color:#536178; width:100%; margin-bottom:2px;">Попередній перегляд зв'язку:</div>
+          ${primaryVal ? renderProductPill(primaryVal, pInfo, false) : '<span style="color:#8c9bb3; font-size:13px; font-style:italic;">(вкажіть основний товар)</span>'}
+          <span class="arrow-icon">➔</span>
+          ${giftVal ? renderProductPill(giftVal, gInfo, true) : '<span style="color:#8c9bb3; font-size:13px; font-style:italic;">(вкажіть подарунок)</span>'}
+        `;
+      } catch (_) {
+        container.innerHTML = `
+          <div style="font-size:12px; font-weight:700; color:#536178; width:100%; margin-bottom:2px;">Попередній перегляд зв'язку:</div>
+          ${primaryVal ? renderProductPill(primaryVal, null, false) : '<span style="color:#8c9bb3; font-size:13px; font-style:italic;">(вкажіть основний товар)</span>'}
+          <span class="arrow-icon">➔</span>
+          ${giftVal ? renderProductPill(giftVal, null, true) : '<span style="color:#8c9bb3; font-size:13px; font-style:italic;">(вкажіть подарунок)</span>'}
+        `;
+      }
+    }
+
+    function triggerPreviewUpdate() {
+      clearTimeout(previewDebounceTimer);
+      previewDebounceTimer = setTimeout(updateSingleLivePreview, 250);
+    }
+
+    async function checkImagesStatus() {
+      const badge = document.getElementById('images-status-badge');
+      if (!badge) return;
+      try {
+        const resp = await fetch('/api/images/status');
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data.loaded) {
+            badge.innerHTML = `🖼️ Фото: <b>${data.count.toLocaleString('uk-UA')}</b> товарів`;
+            badge.title = `XML-фід завантажено (${data.url}). Натисніть для оновлення кешу.`;
+          } else {
+            badge.innerHTML = `🖼️ Фото: завантаження XML...`;
+            setTimeout(checkImagesStatus, 3000);
+          }
+        }
+      } catch (_) {}
+    }
+
+    const toggleImagesEl = document.getElementById('toggle-images');
+    if (toggleImagesEl) {
+      toggleImagesEl.checked = showImages;
+      toggleImagesEl.addEventListener('change', event => {
+        showImages = event.target.checked;
+        localStorage.setItem('horoshop_gifts_show_images', showImages ? 'true' : 'false');
+        applyFilter();
+        updateSingleLivePreview();
+      });
+    }
+
+    const searchRegistryEl = document.getElementById('search-registry');
+    if (searchRegistryEl) {
+      searchRegistryEl.addEventListener('input', () => applyFilter());
+    }
+
+    document.getElementById('primary-display').addEventListener('input', triggerPreviewUpdate);
+    document.getElementById('gift-display').addEventListener('input', triggerPreviewUpdate);
+
+    document.getElementById('images-status-badge')?.addEventListener('click', async () => {
+      if (!confirm('Оновити кеш зображень з віддаленого XML-фіду?\nhttp://176.104.6.149:8080/xml/images_export.xml')) return;
+      const badge = document.getElementById('images-status-badge');
+      if (badge) badge.innerHTML = '🖼️ Оновлення XML...';
+      try {
+        await fetch('/api/images/refresh', { method: 'POST' });
+        setMessage('Запущено фонове оновлення кешу зображень з XML.', 'info');
+        setTimeout(checkImagesStatus, 3000);
+      } catch (e) {
+        setMessage(e.message, 'error');
+      }
+    });
+
+    checkAuthStatus();
     refreshMappingsInfo();
+    checkImagesStatus();
   </script>
 </body>
 </html>
