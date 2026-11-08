@@ -105,12 +105,24 @@ function Stop-ExistingRuntime {
         Write-Output "Stopped existing process: $($_.Name), PID $($_.ProcessId)."
     }
     Remove-Item -LiteralPath (Join-Path $InstallDir "logs\horoshop_gifts.pid") -Force -ErrorAction SilentlyContinue
+
+    try {
+        $allPids = [System.Collections.Generic.HashSet[int]]::new()
+        Get-Process | ForEach-Object { [void]$allPids.Add($_.Id) }
+        Get-CimInstance Win32_Process -Filter "Name = 'conhost.exe'" -ErrorAction SilentlyContinue |
+            Where-Object { !$allPids.Contains($_.ParentProcessId) } |
+            ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+    } catch {}
 }
 
 function Grant-ProjectAccess {
     New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
     & icacls.exe $InstallDir /grant "*S-1-5-18:(OI)(CI)M" /T /C | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "Could not grant SYSTEM access to $InstallDir." }
+
+    # Забезпечуємо наявність Desktop папок системного профілю для уникнення 0xC0000142
+    New-Item -ItemType Directory -Path "C:\Windows\System32\config\systemprofile\Desktop" -Force -ErrorAction SilentlyContinue | Out-Null
+    New-Item -ItemType Directory -Path "C:\Windows\SysWOW64\config\systemprofile\Desktop" -Force -ErrorAction SilentlyContinue | Out-Null
 }
 
 function Initialize-Configuration {
@@ -190,11 +202,19 @@ function Start-AndVerifyService {
         }
     }
     $fallbackSupervisorLog = Join-Path $InstallDir "logs\supervisor.log"
-    $details = if (Test-Path $supervisorLog) {
-        (Get-Content $supervisorLog -Tail 20) -join "`n"
+    $workerErrLog = Join-Path $InstallDir "logs\server-error.log"
+    $workerOutLog = Join-Path $InstallDir "logs\server-output.log"
+    $details = if (Test-Path $workerErrLog -and (Get-Item $workerErrLog).Length -gt 0) {
+        "server-error.log:`n" + ((Get-Content $workerErrLog -Tail 20) -join "`n")
     }
-    elseif (Test-Path $fallbackSupervisorLog) {
-        (Get-Content $fallbackSupervisorLog -Tail 20) -join "`n"
+    elseif (Test-Path $supervisorLog -and (Get-Item $supervisorLog).Length -gt 0) {
+        "supervisor log:`n" + ((Get-Content $supervisorLog -Tail 20) -join "`n")
+    }
+    elseif (Test-Path $fallbackSupervisorLog -and (Get-Item $fallbackSupervisorLog).Length -gt 0) {
+        "supervisor.log:`n" + ((Get-Content $fallbackSupervisorLog -Tail 20) -join "`n")
+    }
+    elseif (Test-Path $workerOutLog -and (Get-Item $workerOutLog).Length -gt 0) {
+        "server-output.log:`n" + ((Get-Content $workerOutLog -Tail 20) -join "`n")
     }
     else {
         "Supervisor log is empty."

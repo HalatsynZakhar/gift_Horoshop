@@ -720,9 +720,5 @@ def run_server() -> None:
     uvicorn.run(app, host=runtime_settings.host, port=runtime_settings.port)
 
 
-# Фонове завантаження XML-фіду зображень при запуску
-threading.Thread(target=images_feed.load, daemon=True).start()
-
-
 if __name__ == "__main__":
     run_server()

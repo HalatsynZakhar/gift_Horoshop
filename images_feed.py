@@ -26,8 +26,15 @@ CACHE_DIR = DATA_DIR / "cache"
 CACHE_FILE = CACHE_DIR / "images_export.xml"
 CACHE_TTL_SECONDS = 3600 * 4  # 4 години кешування XML-фіду
 
-# Сусідні папки, звідки можна миттєво підтягнути вже наявний локальний кеш
+# Сусідні папки, звідки можна миттєво підтягнути вже наявний локальний кеш (локально та на сервері)
 SEED_CACHE_LOCATIONS = [
+    Path(r"C:\HoroshopSets\data\cache\images_export.xml"),
+    Path(r"C:\Categorizer\data\cache\images_export.xml"),
+    Path(r"C:\PriceInstall\data\cache\images_export.xml"),
+    Path(r"C:\Changedetection.io\data\cache\images_export.xml"),
+    Path(r"C:\sets_Horoshop\data\cache\images_export.xml"),
+    Path(r"C:\DockerPriceTrackingScript\data\cache\images_export.xml"),
+    Path(r"C:\changedetectionio\price_tracker\data\cache\images_export.xml"),
     Path(r"C:\Users\ABM\PyCharmProject\sets_Horoshop\data\cache\images_export.xml"),
     Path(r"C:\Users\ABM\PyCharmProject\Categorizer\data\cache\images_export.xml"),
     Path(r"C:\Users\ABM\PyCharmProject\changedetectionio\price_tracker\data\cache\images_export.xml"),
